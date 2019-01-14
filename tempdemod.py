@@ -1,13 +1,13 @@
 import numpy as np
 import math
 from datetime import datetime
-import matplotlib.pyplot as plt
+from sdrtask import SDRTask
 
-class TempDemod:
-    def __init__(self, samp_rate, output = True, file_name = ''):
-        self.samp_rate = samp_rate
-        self.output = output
-        self.file_name = file_name
+class TempDemod(SDRTask):
+    '''Class used for the demodulation and decoding of the 
+    signal sent from a temperature sensor'''
+    def __init__(self, samp_rate, verbose = True, file_name = ''):
+        super().__init__(samp_rate, verbose, file_name)
         self.dig_data = []
         self.prev_switch = []
     
@@ -38,9 +38,6 @@ class TempDemod:
         if self.prev_switch:
             off_count.pop()
 
-        # print("Off count:", len(off_count))
-        #plt.plot(off_count, 'r.')
-        #plt.show()
         return off_count
     
     def digitize_signal(off_count):
@@ -79,7 +76,6 @@ class TempDemod:
 
     def decode_data(self):
         str_data = []
-        # print(self.dig_data) 
         while True:
             try:
                 beg = self.dig_data.index(2) + 1
@@ -87,10 +83,6 @@ class TempDemod:
                 sens_data = list(self.dig_data[beg:end])
                 self.dig_data = self.dig_data[end:]
                 
-                # print("Beg", beg)
-                # print("End", end)
-                # print("Data:", sens_data)
-                # print("Len:", len(sens_data))
                 if len(sens_data) != 36:
                     continue
 
@@ -114,6 +106,9 @@ class TempDemod:
 
         self.dig_data += new_data
         str_data = self.decode_data()
-        if self.output:
-            for string in str_data:
-                print(string)
+        if self.file_name:
+            with open(self.file_name, 'a+') as f:
+                for string in str_data:
+                    f.write('{time}\n{value}\n'.format(time = datetime.now(), value = string))
+                    if self.verbose:
+                        print(string)

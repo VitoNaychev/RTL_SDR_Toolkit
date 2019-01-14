@@ -9,6 +9,7 @@ class TempDemod:
         self.output = output
         self.file_name = file_name
         self.dig_data = []
+        self.prev_switch = []
     
     def calc_ampl(samples):
         samp_ampl = samples.real ** 2 + samples.imag ** 2
@@ -18,21 +19,28 @@ class TempDemod:
     def calc_mean_ampl(samp_ampl):
         return sum(samp_ampl) / len(samp_ampl)
 
-    def calc_offswitchings(samp_ampl):
+    def calc_offswitchings(self, samp_ampl):
         j = 0
         off_count = [0] # number of samples in each off-switching
-        
+        samp_ampl = np.concatenate([self.prev_switch, samp_ampl])
+
         ampl_mean = TempDemod.calc_mean_ampl(samp_ampl)
 
         for i in range(1, len(samp_ampl)):
             if samp_ampl[i] < ampl_mean and samp_ampl[i - 1] < ampl_mean:
                 off_count[j] += 1
+                self.prev_switch.append(samp_ampl[i])
             elif samp_ampl[i] > ampl_mean and samp_ampl[i - 1] < ampl_mean:
                 j += 1
                 off_count.append(0)
+                self.prev_switch.clear()
+
+        if self.prev_switch:
+            off_count.pop()
+
         # print("Off count:", len(off_count))
-        plt.plot(off_count, 'r.')
-        plt.show()
+        #plt.plot(off_count, 'r.')
+        #plt.show()
         return off_count
     
     def digitize_signal(off_count):
@@ -71,30 +79,21 @@ class TempDemod:
 
     def decode_data(self):
         str_data = []
-        print(self.dig_data) 
+        # print(self.dig_data) 
         while True:
             try:
-                beg = 0
-                end = 0
-                for i, bin_num in enumerate(self.dig_data, 0):
-                    if bin_num == 2 and beg == end:
-                        end = i
-                    elif bin_num == 2:
-                        beg = end
-                        end = i
-                        break
-
-                if end == 0:
-                    break
-
-                sens_data = list(self.dig_data[beg + 1:end])
+                beg = self.dig_data.index(2) + 1
+                end = self.dig_data[beg:].index(2) + beg
+                sens_data = list(self.dig_data[beg:end])
                 self.dig_data = self.dig_data[end:]
                 
-                print("Beg", beg)
-                print("End", end)
-                print("Data:", sens_data)
-                print("Len:", len(sens_data))
-                
+                # print("Beg", beg)
+                # print("End", end)
+                # print("Data:", sens_data)
+                # print("Len:", len(sens_data))
+                if len(sens_data) != 36:
+                    continue
+
                 humid_int = TempDemod.get_humidity(sens_data)
                 temp_int = TempDemod.get_temp(sens_data)
                 chan_int = TempDemod.get_channel(sens_data)
@@ -108,7 +107,7 @@ class TempDemod:
     
     def execute(self, samples):
         samp_ampl = TempDemod.calc_ampl(samples)
-        off_switch = TempDemod.calc_offswitchings(samp_ampl)
+        off_switch = self.calc_offswitchings(samp_ampl)
         new_data = TempDemod.digitize_signal(off_switch)
         if not np.any(new_data):
             return
@@ -118,5 +117,3 @@ class TempDemod:
         if self.output:
             for string in str_data:
                 print(string)
-            
-

@@ -16,15 +16,15 @@ async def streaming():
 
     sdr = RtlSdr()
     sdr.sample_rate = samp_rate
-    #sdr.center_freq = 433.7e6
-    sdr.center_freq = 98.3e6
-    sdr.gain = 'auto'
+    sdr.center_freq = 433.7e6
+    # sdr.center_freq = 98.3e6
+    sdr.gain = 1.4
 
     temp_demod = TempDemod(samp_rate)
     fm_demod = FmDemod(samp_rate)
 
     async for samples in sdr.stream(samp_size):
-        fm_demod.execute(samples)
+        await execute(temp_demod, samples)
 
     await sdr.stop()
 

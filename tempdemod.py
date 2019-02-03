@@ -2,8 +2,9 @@ import numpy as np
 import math
 from datetime import datetime
 from sdrtask import SDRTask
+from demodtask import DemodTask
 
-class TempDemod(SDRTask):
+class TempDemod(DemodTask):
     '''Class used for the demodulation and decoding of the 
     signal sent from a temperature sensor'''
     def __init__(self, samp_rate, verbose = True, file_name = ''):

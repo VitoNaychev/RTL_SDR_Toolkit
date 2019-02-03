@@ -1,13 +1,12 @@
 from recordsamp import RecordSamp
 from fftsink import FftSink
 from sdrtask import SDRTask
+from recordtask import RecordTask
 import numpy as np
 
-class RawIQ(SDRTask):
+class RawIQ(RecordTask):
     def __init__(self, samp_rate, verbose = False, file_name = '', on_active = False, diff = 0):
-        super().__init__(samp_rate, verbose, file_name)
-        self.on_active = on_active
-        self.diff = diff
+        super().__init__(samp_rate, verbose, file_name, on_active, diff)
         self.samp_record = RecordSamp(file_name)
         self.count = 0
         self.verbose = verbose

@@ -2,8 +2,9 @@ import numpy as np
 import pyaudio
 import scipy.signal as signal
 from sdrtask import SDRTask
+from demodtask import DemodTask
 
-class FmDemod(SDRTask):
+class FmDemod(DemodTask):
     f_bw = 200000
     audio_freq = 44100
     def __init__(self, samp_rate, verbose = True, file_name = ''):

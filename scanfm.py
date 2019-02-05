@@ -1,7 +1,12 @@
+import asyncio
 import helpers
 import numpy as np
 import scipy
+from rtlsdr import RtlSdr
 from displaytask import DisplayTask
+
+FM_BEGIN_FREQ = 87.5e6
+FM_END_FREQ = 108e6
 
 class ScanFm(DisplayTask):
     def __init__(self, samp_rate):
@@ -28,7 +33,11 @@ class ScanFm(DisplayTask):
             #   Having the bandwidth of the signal in Hertz we
             #   calculate the indices of the FFT corresponding
             #   to those frequencies
-            lower_band = int(translate(-100e3 + x[max_index]))
+            
+            if -100e3 + x[max_index] < self.samp_rate / 2:
+                lower_band = 0
+            else:
+                lower_band = int(translate(-100e3 + x[max_index]))
 
             if 100e3 + x[max_index] > self.samp_rate / 2:
                 upper_band = len(samp_fft)
@@ -40,5 +49,20 @@ class ScanFm(DisplayTask):
             samp_fft[lower_band:upper_band] = min(samp_fft)
             
         return np.array(stations)
+    
+    async def run(self, sdr, time = 0, samp_size = RtlSdr.DEFAULT_READ_SIZE):
+        time_pass = 0
+        sdr.center_freq = FM_BEGIN_FREQ + self.samp_rate / 2
         
-            
+        while sdr.center_freq < FM_END_FREQ:
+            samples = sdr.read_samples(samp_size)
+            ret = self.execute(samples)
+            print(np.around((ret + sdr.center_freq) / 1e6, decimals = 1))
+            sdr.center_freq += self.samp_rate
+
+            if time:
+                time_pass += samp_size
+
+            if time_pass / self.samp_rate >= time and time:
+                break
+

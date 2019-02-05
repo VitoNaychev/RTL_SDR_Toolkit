@@ -69,6 +69,6 @@ class FmDemod(DemodTask):
                 f.write(audio_data.astype('int16'))
 
     def __del__(self):
-        if stream is not None:
+        if self.stream is not None:
             self.stream.close()
 

@@ -45,4 +45,3 @@ class FftSink(DisplayTask):
             
         samp_fft = helpers.calc_fft(samples, self.samp_rate, len(samples), True)
         self.update_fft(samp_fft)
-

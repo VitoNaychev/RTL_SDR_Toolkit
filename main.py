@@ -118,21 +118,9 @@ def init_rtl_task(args):
 
 
 async def streaming(sdr, sdr_task, sdr_samp_size):
-    ret_val_list = np.array([])
+    await sdr_task.run(sdr)
 
-    async for samples in sdr.stream(sdr_samp_size):
-        ret_val = sdr_task.execute(samples)
-        
-        if args.scan_fm and sdr.center_freq < 108e6:
-            ret_val_list = np.concatenate([ret_val_list, ret_val + sdr.center_freq])
-            sdr.center_freq = sdr.center_freq + sdr.sample_rate 
-        elif args.scan_fm and sdr.center_freq >= 108e6:
-            break 
-   
-    if args.scan_fm:
-        print(np.around(ret_val_list / 1e6, decimals = 2))
-
-    await sdr.stop()
+    #await sdr.stop()
 
     sdr.close()
 

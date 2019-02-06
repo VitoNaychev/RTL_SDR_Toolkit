@@ -1,39 +1,42 @@
 import numpy as np
 from sdrtask import SDRTask
 
-class ADSBDemod(SDRTask):
+class AdsbDemod(SDRTask):
     MODES_PREAMBLE = 8          # microseconds
     MODES_LONG_MSG_BITS = 112
     MODES_SHORT_MSG_BITS = 56
-    MODES_FILL_LEN = MODES_PREAMBLE + MODES_LONG_MSG_BITS
+    MODES_FULL_LEN = MODES_PREAMBLE + MODES_LONG_MSG_BITS
     
     def __init__(self, samp_rate, verbose = True, file_name = ''):
-        super().__init__(samp_rate, verbose, file_name)
+        super().__init__(samp_rate)
+        self.verbose = verbose
+        self.file_name = file_name
     
     def calc_magnitude(samples):
-        samples *= np.around(255)
+        samples *= 255
         samp_mag = np.around(np.absolute(samples) * 360)
         return samp_mag
 
-    def detect_out_phase(samp_mag):
-
-        if samp_mag[3] > samp_mag[2] / 3: return 1
-        if samp_mag[10] > samp_mag[9] / 3: return 1
-        if samp_mag[6] > samp_mag[7] / 3: return 1
+    def detect_out_phase(mag):
+        if mag[3] > mag[2] / 3:
+            return 1
+        if mag[10] > mag[9] / 3: 
+            return 1
+        if mag[6] > mag[7] / 3: 
+            return 1
         # if samp_mag[-1] > samp_mag[1] / 3 return 1
         return 0
     
-    def correct_phase(samp_mag):
-        data_bits = samp_mag[16:]
-        for i in range(0, ADSBDemod.MODES_LONG_BITS*2 - 2, 2):
-            if(data_bits[i] > data_bits[i + 1]):
-                data_bits[i + 2] = (data_bits[i + 2] * 5) / 4
+    def correct_phase(data_mag):
+        for i in range(0, AdsbDemod.MODES_LONG_MSG_BITS*2 - 2, 2):
+            if(data_mag[i] > data_mag[i + 1]):
+                data_mag[i + 2] = (data_mag[i + 2] * 5) / 4
             else:
-                data_bits[i + 2] = (data_bits[i + 2] * 4) / 5
-        samp_mag[16:ADSBDemod.MODES_LONG_BITS] = data_bits
-        return samp_mag
+                data_mag[i + 2] = (data_mag[i + 2] * 4) / 5
 
-    def execute(self, samples):
+        return data_mag
+    
+    def check_preamble(mag):
         # PREAMBLE STRUCTURE
         # Each sample has a length of 0.5 microseconds
         # Thus the total length of 16 samples
@@ -54,56 +57,156 @@ class ADSBDemod(SDRTask):
         # 13  -
         # 14  --
         # 15  -
+        if not (mag[0] > mag[1] and \
+             mag[1] < mag[2] and \
+             mag[2] > mag[3] and \
+             mag[3] < mag[0] and \
+             mag[4] < mag[0] and \
+             mag[5] < mag[0] and \
+             mag[6] < mag[0] and \
+             mag[7] > mag[8] and \
+             mag[8] < mag[9] and \
+             mag[9] > mag[6]):
+            return 0
+        
+        
+        high = (mag[0] + mag[2] + mag[7] + mag[9]) / 6
+        
+        # Check if the 4th and 5th bit of the preamble are lower than the
+        # average high. Those two bits are the furthest from two high states
+        # which means that that there should be no energy leakege from previous
+        # high bits. If those two have a higher level than the average it means
+        # that even after applying correction we won't get a valid message 
+        if mag[4] >= high or mag[5] >= high:
+            return 0
+
+        # Same as for the 4th and 5th
+        if mag[11] >= high or \
+           mag[12] >= high or \
+           mag[13] >= high or \
+           mag[14] >= high:
+            return 0
+        
+        return 1
+    
+    def return_msg_type(msg_type):
+        if msg_type == 16 or msg_type == 17 or \
+           msg_type == 19 or msg_type == 20 or \
+           msg_type == 21:
+            return AdsbDemod.MODES_LONG_MSG_BITS
+        else:
+            return AdsbDemod.MODES_SHORT_MSG_BITS
+
+    def pack_into_bytes(data_bits):
+        data_bytes = []
+        for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS // 2, 8):
+            cur_byte =  data_bits[j + 0] << 0 | \
+                        data_bits[j + 1] << 1 | \
+                        data_bits[j + 2] << 2 | \
+                        data_bits[j + 3] << 3 | \
+                        data_bits[j + 4] << 4 | \
+                        data_bits[j + 5] << 5 | \
+                        data_bits[j + 6] << 6 | \
+                        data_bits[j + 7] << 7
+
+            data_bytes.append(cur_byte)
+
+        return data_bytes
+            
+
+    
+    def execute(self, samples):
 
         use_correction = False
-        mag = calc_magnitude(samples)
+        mag = AdsbDemod.calc_magnitude(samples)
         mag_cpy = []
+        
+        # Cycle through array of samples searching for a valid message
+        # structure within it
+        for i in range(len(mag) - AdsbDemod.MODES_FULL_LEN * 2):
+            # All of the MODES lengths (defined in the begining of the class)
+            # are multiplied by two, because of the encoding of the data, unitl 
+            # the data is converted into bits.
+            # The modulation is PPM(Pulse Position Modulation) and each
+            # pulse accompanied by and idle period represents a bit. Therefore 
+            # if one bit is with a length of 1 ms each of the two pulses representing
+            # it will have a length of 0.5 ms. Because of this the minimal sampling
+            # rate needed to catch those short pulses is 2 MHz (T = 1/(2 * 10^6) = 0.5 ms)
+            #       _____ _____            _____       _____
+            #      |     |     |          |     |     |     |
+            #      |     |     |          |     |     |     |
+            #  OFF | ON  | ON  | OFF  OFF | ON  |     |     |
+            # _____|     |     |__________|     |_____|     |
+            #
+            #|<--->|<--->|
+            # 0.5ms 0.5ms
+            #
+            # A logical one is denoted by an ON followed by and OFF and a logical zero
+            # by an OFF followed by an ON
 
-        for i in range(len(samples) - MODES_FULL_LEN * 2):
-            if not (mag[i] > mag[i + 1] and \
-                 mag[i + 1] < mag[i + 2] and \
-                 mag[i + 2] > mag[i + 3] and \
-                 mag[i + 3] < mag[i] and \
-                 mag[i + 4] < mag[i] and \
-                 mag[i + 5] < mag[i] and \
-                 mag[i + 6] < mag[i] and \
-                 mag[i + 7] > mag[i + 8] and \
-                 mag[i + 8] < mag[i + 9] and \
-                 mag[i + 9] > mag[i + 6]):
+            # Check for a valid preamble denoting an incoming message
+            # Keep in mind that having 2 MS/s means that alot of the noice will
+            # be mistaken for a valid preamble, which is the reason for the later
+            # tests of the message
+            if not AdsbDemod.check_preamble(mag[i : i + AdsbDemod.MODES_PREAMBLE * 2]):
                 continue
-            
-            high = (mag[i] + mag[i + 2] + mag[i + 7] + mag[i + 9]) / 6
 
-            if mag[i + 4] >= high or mag[i + 5] > high:
-                continue
+            # if use_correction:
+            # Due to the fact that the sample period is equal to the length of the pulses
+            # It is unlikely that the pulses will be totaly synchronised with the sampling
+            # process. Therefore small correction can be made to fix this.
+            # The main problem is that if the pulses are not sampled properly they 
+            # may "leak" in two adjecent ones. Therefore phase correction is applied
+            # if we detect that the difference between the low(OFF) and high(ON) levels
+            # is too small which usually denotes incorrect(out of phase) sampling.
+            # In the phase correction we make the high levels a bit higher and the low ones
+            # a bit lower
+            data_mag = mag[i + AdsbDemod.MODES_PREAMBLE * 2 : i + AdsbDemod.MODES_FULL_LEN*2]
+            mag_cpy = list(data_mag)
 
-            if mag[i + 11] >= high or \
-               mag[i + 12] >= high or \
-               mag[i + 13] >= high or\
-               mag[i + 14] >= high:
-                continue
-
-            if use_correction:
-                mag_cpy = mag[i + ADSBDemod.MODES_PREAMBLE * 2 : ADSBDemod.MODES_LONG_MSG_BITS*2]
-                if(i and detect_out_phase(mag_cpy)):
-                    mag_cpy = correct_phase(mag_copy)
+            if(i and AdsbDemod.detect_out_phase(mag_cpy)):
+                mag_cpy = AdsbDemod.correct_phase(mag_cpy)
             
             bits = []
 
-            for j in range(0, ADSBDemod.MODES_LONG_MSG_BITS, 2):
-                low = mag_cpy[i + j]
-                high = mag_cpy[i + j + 1]
+            for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS, 2):
+                low = mag_cpy[j]
+                high = mag_cpy[j + 1]
 
                 delta = abs(low - high)
 
                 if j and delta < 256:
-                    bits.append(bits[-1])
+                    bits.append(bits[j // 2 - 1])
                 elif low == high:
                     bits.append(2)
                 elif low > high:
                     bits.append(1)
                 else:
                     bits.append(0)
+            
+            data_bytes = AdsbDemod.pack_into_bytes(bits)
+            
+            # The downlink format is contained within the first 5 bits of the
+            # ADS-B message structure. With it we can determine the length of
+            # the message
+            # +--------+--------+-----------+--------------------------+---------+
+            # |  DF 5  |  ** 3  |  ICAO 24  |          DATA 56         |  PI 24  |
+            # +--------+--------+-----------+--------------------------+---------+
+            
+            msg_type = data_bytes[0] >> 3
+            
+            msg_len = AdsbDemod.return_msg_type(msg_type) // 8
+            delta = 0
+            for j in range(0, msg_len * 8 * 2, 2):
+                delta += abs(data_mag[j] - \
+                             data_mag[j + 1])
 
-            print(bits)
+            delta /= msg_len * 4
+            
 
+            if delta < 10 * 255:
+                continue
+
+            print('[{}]'.format(', '.join(hex(x) for x in data_bytes)))   
+            
+            #print(data_bytes)

@@ -16,6 +16,7 @@ class FmDemod(DemodTask):
         self.dec_audio = int(self.samp_rate_fm / FmDemod.audio_freq)
         self.audio_rate = int(self.samp_rate_fm / self.dec_audio)
         self.stream = None
+
         if verbose:
             p = pyaudio.PyAudio()
             self.stream = p.open(format=pyaudio.paInt16,

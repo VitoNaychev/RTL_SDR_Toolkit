@@ -12,6 +12,7 @@ from sdrtask import SDRTask
 from rawiq import RawIQ
 from fftsink import FftSink
 from scanfm import ScanFm
+from adsbdemod import AdsbDemod
 import argparse
 
 temp_default = {
@@ -32,7 +33,7 @@ scan_fm_default = {
         'samp_rate': 2e6,
         'gain': 'auto'
         }
-adsb_defult = {
+adsb_default = {
         'center_freq': 1090e6,
         'samp_rate': 2e6,
         'gain': 44.5

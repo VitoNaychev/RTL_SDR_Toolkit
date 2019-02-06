@@ -1,0 +1,9 @@
+# ignore the __pycache__ directory
+./__pycache__
+# ignore checkpoints by Jupyter Noteboook
+./.ipynb_checkpoints
+# ignore all Jupyter Notebook files
+*.ipynb
+# ignore vim swap files
+*.swp
+

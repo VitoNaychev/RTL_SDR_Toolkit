@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name digital_capacitors)(type Legacy)(uri /home/viktor/Programming/RTL_SDR_Toolkit/bandpass_filter_design/library/digital_capacitors.lib)(options "")(descr ""))
+)

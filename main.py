@@ -98,10 +98,7 @@ def init_rtl_task(args):
     elif args.fft_sink:
         lower_lim = args.limit
         persis = args.persistence
-        if not lower_lim:
-            sdr_task = FftSink(samp_rate, persis = persis)
-        else:
-            sdr_task = FftSink(samp_rate, lower_lim, persis)
+        sdr_task = FftSink(samp_rate, lower_lim, persis)
     elif args.raw_iq:
         on_active = args.on_active
         diff = args.diff

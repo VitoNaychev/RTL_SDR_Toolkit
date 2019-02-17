@@ -10,12 +10,6 @@
   )
 
   (page A4)
-  (title_block
-    (title "Tunable Bandpass Filter")
-    (date 2019-02-17)
-    (company "Viktor Naychev")
-  )
-
   (layers
     (0 F.Cu signal)
     (31 B.Cu signal)

@@ -1,0 +1,18 @@
+Reference, Quantity, Value, Footprint,Manufacturer Part Number,Part Page,Price,Total Price
+C1 C17 ,2,PE64102,digital_capacitors:PE64102-QFN,PE64102,https://psemi.rfmw.com/ProductDetail/PE64102-Peregrine_Semiconductor/35332/,$0.72,$1.44
+C2 ,2,"0,5pF",Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder,CL21C0R5BBNC,https://store.comet.bg/Catalogue/Product/28548/,$0.07,$0.14
+C16 C3 ,2,10pF,Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder,CL21C100DBNC,https://store.comet.bg/Catalogue/Product/23048/,$0.04,$0.08
+C13 C4 ,2,"1,8pF",Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder,CL21C1R8BBNC,https://store.comet.bg/Catalogue/Product/23787/,$0.06,$0.12
+C14 C5 ,2,15pF,Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder,CL21C150JBNC,https://store.comet.bg/Catalogue/Product/23059/,$0.15,$0.30
+C10 C15 C6 ,3,NCD2100,digital_capacitors:NCD2100-TSOT-6,NCD2100TTR,https://www.mouser.bg/ProductDetail/IXYS-Integrated-Circuits/NCD2100TTR?qs=%2fha2pyFaduh0M4aY9WD%2fYHubPyonf%2fxG8gTGeOt9VvelpDysXyN3NA%3d%3d,$2.68,$8.04
+C11 C12 C7 C8 ,4,PE64909,digital_capacitors:PE64909-QFN,PE64909,https://psemi.rfmw.com/ProductDetail/PE64909-Peregrine_Semiconductor/465640/,$0.82,$3.28
+C9 ,1,18pF,Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder,CL21C180JBNC,https://store.comet.bg/Catalogue/Product/23066/,$0.04,$0.04
+J2 ,1,Conn_01x09_Male,Connector_PinHeader_2.54mm:PinHeader_1x09_P2.54mm_Vertical,CH31102V200,https://store.comet.bg/Catalogue/Product/17826/,$0.04,$0.04
+J1 J3 ,2,Conn_Coaxial,Connector_Coaxial:SMA_Amphenol_901-144_Vertical,SMA F R/A PCB,https://store.comet.bg/Catalogue/Product/8013/ ,$1.17,$2.34
+L1 L2 L3 ,3,4nH,Inductor_SMD:L_0603_1608Metric_Pad1.05x0.95mm_HandSolder,MLG0603P4N0BT000 ,https://www.mouser.bg/ProductDetail/TDK/MLG0603P4N0BT000?qs=sGAEpiMZZMsg%252by3WlYCkU3b8Zei%252b1OAiHsqTmCwtvi8%3d,$0.10,$0.30
+R1 R19 R2 R20 R21 R3 ,6,"7,5k",Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,0805S8F0752T50,https://store.comet.bg/Catalogue/Product/3545/,$0.07,$0.42
+R11 R18 R4 ,3,68k,Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,0805S8F0683T50,https://store.comet.bg/Catalogue/Product/3562/,$0.07,$0.21
+R10 R12 R13 R14 R15 R16 R17 R5 R6 R7 R8 R9 ,12,"2,7k",Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,0805S8F0272T50,https://store.comet.bg/Catalogue/Product/29757/,$0.07,$0.84
+,,,,,,,
+,,,,,,,Total:
+,,,,,,,$17.59

@@ -1,4 +1,5 @@
 # ignore the __pycache__ directory
+*/__pycache__/
 __pycache__/**
 # ignore checkpoints by Jupyter Noteboook
 ./.ipynb_checkpoints

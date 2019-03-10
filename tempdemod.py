@@ -18,7 +18,8 @@ class TempDemod(DemodTask):
         return samp_ampl
     
     def calc_mean_ampl(samp_ampl):
-        return sum(samp_ampl) / len(samp_ampl)
+        # return sum(samp_ampl) / len(samp_ampl)
+        return (max(samp_ampl) + min(samp_ampl)) / 2
 
     def calc_offswitchings(self, samp_ampl):
         j = 0
@@ -79,11 +80,12 @@ class TempDemod(DemodTask):
         str_data = []
         while True:
             try:
+                print(self.dig_data)
                 beg = self.dig_data.index(2) + 1
                 end = self.dig_data[beg:].index(2) + beg
                 sens_data = list(self.dig_data[beg:end])
                 self.dig_data = self.dig_data[end:]
-                
+
                 if len(sens_data) != 36:
                     continue
 

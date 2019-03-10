@@ -13,6 +13,10 @@ from rawiq import RawIQ
 from fftsink import FftSink
 from scanfm import ScanFm
 from adsbdemod import AdsbDemod
+from adsbdemod import AdsbDemod
+from transmittask import TransmitTask
+from jammertask import JammerTask
+from replaytask import ReplayTask
 import argparse
 
 temp_default = {

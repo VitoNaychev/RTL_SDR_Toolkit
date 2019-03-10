@@ -9,6 +9,7 @@ class SDRTask:
         pass
 
     async def run(self, sdr, time = 0, samp_size = RtlSdr.DEFAULT_READ_SIZE):
+        samp_size = 2**16
         time_pass = 0
         
         async for samples in sdr.stream(samp_size):

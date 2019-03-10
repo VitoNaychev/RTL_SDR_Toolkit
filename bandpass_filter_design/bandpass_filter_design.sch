@@ -233,25 +233,14 @@ F 3 "" H 3120 4250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L digital_capacitors:PE64102 C1
-U 1 1 5C65588C
-P 2475 3050
-F 0 "C1" H 2475 3615 50  0000 C CNN
-F 1 "PE64102" H 2475 3524 50  0000 C CNN
-F 2 "digital_capacitors:PE64102-QFN" H 2525 3150 50  0001 C CNN
-F 3 "https://www.psemi.com/pdf/datasheets/pe64102ds.pdf" H 2525 3150 50  0001 C CNN
-	1    2475 3050
-	1    0    0    -1  
-$EndComp
-$Comp
 L Device:CP1 C2
 U 1 1 5C65D3DF
-P 2475 3750
-F 0 "C2" V 2715 3750 50  0000 C CNN
-F 1 "0,5pF" V 2615 3750 50  0000 C CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 2475 3750 50  0001 C CNN
-F 3 "~" H 2475 3750 50  0001 C CNN
-	1    2475 3750
+P 2275 3750
+F 0 "C2" V 2515 3750 50  0000 C CNN
+F 1 "0,5pF" V 2415 3750 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 2275 3750 50  0001 C CNN
+F 3 "~" H 2275 3750 50  0001 C CNN
+	1    2275 3750
 	0    1    1    0   
 $EndComp
 $Comp
@@ -259,34 +248,21 @@ L Device:CP1 C3
 U 1 1 5C65D4DD
 P 1350 3450
 F 0 "C3" V 1098 3450 50  0000 C CNN
-F 1 "10pF" V 1189 3450 50  0000 C CNN
+F 1 "7,5pF" V 1189 3450 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1350 3450 50  0001 C CNN
 F 3 "~" H 1350 3450 50  0001 C CNN
 	1    1350 3450
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	2975 3750 2625 3750
-$Comp
-L digital_capacitors:PE64102 C17
-U 1 1 5C666B44
-P 9300 2950
-F 0 "C17" H 9300 3515 50  0000 C CNN
-F 1 "PE64102" H 9300 3424 50  0000 C CNN
-F 2 "digital_capacitors:PE64102-QFN" H 9350 3050 50  0001 C CNN
-F 3 "https://www.psemi.com/pdf/datasheets/pe64102ds.pdf" H 9350 3050 50  0001 C CNN
-	1    9300 2950
-	1    0    0    -1  
-$EndComp
 $Comp
 L Device:CP1 C18
 U 1 1 5C666B4B
-P 9300 3550
-F 0 "C18" V 9530 3550 50  0000 C CNN
-F 1 "0.5pF" V 9450 3550 50  0000 C CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 9300 3550 50  0001 C CNN
-F 3 "~" H 9300 3550 50  0001 C CNN
-	1    9300 3550
+P 9550 3550
+F 0 "C18" V 9780 3550 50  0000 C CNN
+F 1 "0,5pF" V 9700 3550 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 9550 3550 50  0001 C CNN
+F 3 "~" H 9550 3550 50  0001 C CNN
+	1    9550 3550
 	0    1    1    0   
 $EndComp
 $Comp
@@ -294,7 +270,7 @@ L Device:CP1 C16
 U 1 1 5C668858
 P 10350 2850
 F 0 "C16" V 10098 2850 50  0000 C CNN
-F 1 "10pF" V 10189 2850 50  0000 C CNN
+F 1 "7,5pF" V 10189 2850 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 10350 2850 50  0001 C CNN
 F 3 "~" H 10350 2850 50  0001 C CNN
 	1    10350 2850
@@ -387,37 +363,11 @@ $EndComp
 Wire Wire Line
 	8250 3750 8250 3250
 Wire Wire Line
-	9450 3550 9900 3550
-Wire Wire Line
 	2875 2750 2925 2750
 Wire Wire Line
 	2925 2750 2925 2850
 Wire Wire Line
-	2925 3150 2875 3150
-Wire Wire Line
-	2875 3050 2925 3050
-Connection ~ 2925 3050
-Wire Wire Line
-	2925 3050 2925 3150
-Wire Wire Line
-	2875 2950 2925 2950
-Connection ~ 2925 2950
-Wire Wire Line
-	2925 2950 2925 3050
-Wire Wire Line
 	2875 2850 2925 2850
-Connection ~ 2925 2850
-Wire Wire Line
-	2925 2850 2925 2950
-Wire Wire Line
-	2875 3250 2975 3250
-Wire Wire Line
-	2875 3350 2975 3350
-Wire Wire Line
-	2975 3350 2975 3250
-Connection ~ 2975 3350
-Wire Wire Line
-	2975 3750 2975 3350
 Wire Wire Line
 	4350 2100 4350 2050
 Wire Wire Line
@@ -467,36 +417,7 @@ Wire Wire Line
 Wire Wire Line
 	9750 2650 9750 2750
 Wire Wire Line
-	9750 3050 9700 3050
-Wire Wire Line
-	9700 2950 9750 2950
-Connection ~ 9750 2950
-Wire Wire Line
-	9750 2950 9750 3050
-Wire Wire Line
-	9700 2850 9750 2850
-Connection ~ 9750 2850
-Wire Wire Line
-	9750 2850 9750 2950
-Wire Wire Line
 	9700 2750 9750 2750
-Connection ~ 9750 2750
-Wire Wire Line
-	9750 2750 9750 2850
-Wire Wire Line
-	9700 3150 9900 3150
-Wire Wire Line
-	9900 3150 9900 3250
-Wire Wire Line
-	9700 3250 9900 3250
-Connection ~ 9900 3250
-Wire Wire Line
-	9900 3250 9900 3550
-Wire Wire Line
-	9900 3150 9900 2850
-Wire Wire Line
-	9900 2850 10200 2850
-Connection ~ 9900 3150
 Wire Wire Line
 	6800 2100 6800 2000
 Wire Wire Line
@@ -800,17 +721,6 @@ VDD
 Text Label 6850 3700 0    50   ~ 0
 VDD
 Wire Wire Line
-	2075 2750 2025 2750
-Wire Wire Line
-	1725 3750 2325 3750
-Wire Wire Line
-	2075 2850 2025 2850
-Wire Wire Line
-	2025 2850 2025 2750
-Connection ~ 2025 2750
-Wire Wire Line
-	2025 2750 1725 2750
-Wire Wire Line
 	8600 2650 8850 2650
 Wire Wire Line
 	8900 2750 8850 2750
@@ -819,8 +729,6 @@ Wire Wire Line
 Connection ~ 8850 2650
 Wire Wire Line
 	8850 2650 8900 2650
-Wire Wire Line
-	8600 3550 9150 3550
 $Comp
 L power:PWR_FLAG #FLG01
 U 1 1 5C9F3BDB
@@ -1265,19 +1173,9 @@ ENser
 Text Label 2200 4250 0    50   ~ 0
 DATA
 Wire Wire Line
-	2075 3150 1925 3150
-Wire Wire Line
-	1925 3150 1925 3875
-Wire Wire Line
 	2050 4250 2200 4250
 Wire Wire Line
 	2050 3875 2050 3250
-Wire Wire Line
-	2050 3250 2075 3250
-Wire Wire Line
-	1800 3875 1800 3050
-Wire Wire Line
-	1800 3050 2075 3050
 $Comp
 L Device:R R19
 U 1 1 5CFEDDBA
@@ -1394,7 +1292,6 @@ Text Label 1250 1475 0    50   ~ 0
 GND
 Wire Wire Line
 	5450 1950 5450 2100
-Connection ~ 2975 3250
 Wire Wire Line
 	8600 2650 8600 3250
 Wire Wire Line
@@ -1422,8 +1319,6 @@ Wire Wire Line
 Wire Wire Line
 	9850 3375 9850 4000
 Wire Wire Line
-	2975 3250 3120 3250
-Wire Wire Line
 	1500 3450 1725 3450
 Wire Wire Line
 	1000 3450 1200 3450
@@ -1434,11 +1329,140 @@ Connection ~ 1725 3450
 Wire Wire Line
 	1725 3450 1725 3750
 Wire Wire Line
-	1725 2750 1725 3450
-Wire Wire Line
 	8250 3250 8600 3250
 Connection ~ 8250 3250
 Connection ~ 8600 3250
 Wire Wire Line
 	8600 3250 8600 3550
+Wire Wire Line
+	9900 2850 10200 2850
+Wire Wire Line
+	9700 2850 9750 2850
+Connection ~ 9750 2750
+Wire Wire Line
+	9750 2750 9750 2850
+Wire Wire Line
+	9900 3250 9900 3550
+Connection ~ 9900 3250
+Wire Wire Line
+	9700 3250 9900 3250
+Wire Wire Line
+	9900 3150 9900 2850
+Wire Wire Line
+	9900 3150 9900 3250
+Connection ~ 9900 3150
+Wire Wire Line
+	9700 3150 9900 3150
+Wire Wire Line
+	9750 3050 9700 3050
+Wire Wire Line
+	9700 2950 9750 2950
+Wire Wire Line
+	9750 2950 9750 3050
+Connection ~ 9750 2950
+Connection ~ 9750 2850
+Wire Wire Line
+	9750 2850 9750 2950
+$Comp
+L digital_capacitors:PE64102 C17
+U 1 1 5C666B44
+P 9300 2950
+F 0 "C17" H 9300 3515 50  0000 C CNN
+F 1 "PE64102" H 9300 3424 50  0000 C CNN
+F 2 "digital_capacitors:PE64102-QFN" H 9350 3050 50  0001 C CNN
+F 3 "https://www.psemi.com/pdf/datasheets/pe64102ds.pdf" H 9350 3050 50  0001 C CNN
+	1    9300 2950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2975 3250 3120 3250
+Connection ~ 2975 3250
+Wire Wire Line
+	1725 2750 1725 3450
+Wire Wire Line
+	2025 2750 1725 2750
+Wire Wire Line
+	2075 2850 2025 2850
+Wire Wire Line
+	2025 2850 2025 2750
+Connection ~ 2025 2750
+Wire Wire Line
+	2075 2750 2025 2750
+Wire Wire Line
+	2050 3250 2075 3250
+Wire Wire Line
+	1800 3050 2075 3050
+Wire Wire Line
+	1925 3150 1925 3875
+Wire Wire Line
+	2075 3150 1925 3150
+Wire Wire Line
+	1800 3875 1800 3050
+Wire Wire Line
+	2975 3750 2975 3350
+Wire Wire Line
+	2975 3350 2975 3250
+Connection ~ 2975 3350
+Wire Wire Line
+	2875 3350 2975 3350
+Wire Wire Line
+	2875 3250 2975 3250
+Wire Wire Line
+	2875 3050 2925 3050
+Wire Wire Line
+	2875 2950 2925 2950
+Connection ~ 2925 2850
+Wire Wire Line
+	2925 2850 2925 2950
+Connection ~ 2925 2950
+Wire Wire Line
+	2925 2950 2925 3050
+Wire Wire Line
+	2925 3150 2875 3150
+Connection ~ 2925 3050
+Wire Wire Line
+	2925 3050 2925 3150
+$Comp
+L digital_capacitors:PE64102 C1
+U 1 1 5C65588C
+P 2475 3050
+F 0 "C1" H 2475 3615 50  0000 C CNN
+F 1 "PE64102" H 2475 3524 50  0000 C CNN
+F 2 "digital_capacitors:PE64102-QFN" H 2525 3150 50  0001 C CNN
+F 3 "https://www.psemi.com/pdf/datasheets/pe64102ds.pdf" H 2525 3150 50  0001 C CNN
+	1    2475 3050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:CP1 C19
+U 1 1 5C8125A4
+P 2700 3750
+F 0 "C19" V 2940 3750 50  0000 C CNN
+F 1 "0,5pF" V 2840 3750 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 2700 3750 50  0001 C CNN
+F 3 "~" H 2700 3750 50  0001 C CNN
+	1    2700 3750
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1725 3750 2125 3750
+Wire Wire Line
+	2425 3750 2550 3750
+Wire Wire Line
+	2850 3750 2975 3750
+$Comp
+L Device:CP1 C20
+U 1 1 5C871ABB
+P 9250 3550
+F 0 "C20" V 9480 3550 50  0000 C CNN
+F 1 "0,5pF" V 9400 3550 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 9250 3550 50  0001 C CNN
+F 3 "~" H 9250 3550 50  0001 C CNN
+	1    9250 3550
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9100 3550 8600 3550
+Wire Wire Line
+	9700 3550 9900 3550
 $EndSCHEMATC

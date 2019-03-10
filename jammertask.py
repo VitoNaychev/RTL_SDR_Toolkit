@@ -20,7 +20,7 @@ class JammerTask(TransmitTask):
                         + np.around(np.cos(np.pi * 2 / 4), 2) * 1j)
         sin_data.append(np.around(np.sin(np.pi * 3 / 4), 2) 
                         + np.around(np.cos(np.pi * 3 / 4), 2) * 1j)
-        for i in range(1e6)
+        for i in range(1e6):
             sin_data += sin_data
 
         return np.array(sin_data)

@@ -19,30 +19,6 @@ from jammertask import JammerTask
 from replaytask import ReplayTask
 import argparse
 
-temp_default = {
-        'center_freq': 433.7e6,
-        'samp_rate': 1e6,
-        'gain': 1.4
-        }
-
-fm_default = {
-        'center_freq': 98.3e6,
-        'samp_rate': 1e6,
-        'gain': 'auto'
-        }
-
-scan_fm_default = {
-        'center_freq': 87.5e6,
-        #'center_freq': 98.5e6,
-        'samp_rate': 2e6,
-        'gain': 'auto'
-        }
-adsb_default = {
-        'center_freq': 1090e6,
-        'samp_rate': 2e6,
-        'gain': 44.5
-        }
-
 def init_parser(parser):
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--temp_demod", action="store_true", help="Listen to temperature sensor")
@@ -52,8 +28,8 @@ def init_parser(parser):
     group.add_argument("--fft_sink", action="store_true", help="Start FFT sink")
     group.add_argument("--scan_fm", action="store_true", help="Scan FM radio spectrum")
 
-    parser.add_argument("-c", "--center", type=int, help="Center frequnecy")
-    parser.add_argument("-r", "--rate", type=int, help="Sampling rate")
+    parser.add_argument("-c", "--center", type=float, help="Center frequnecy")
+    parser.add_argument("-r", "--rate", type=float, help="Sampling rate")
     parser.add_argument("-g", "--gain", type=float, help="Set SDR gain")
     parser.add_argument("-f", "--file", help="Save data to file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Print data to standard output")
@@ -64,78 +40,58 @@ def init_parser(parser):
     parser.add_argument("--limit", type=int, help="Set lower limit by Y axis for FFT Sink")
     parser.add_argument("--persistence", action="store_true", help="Display highest values over time")
 
+
+def check_args(args):
+    # Check if all the arguments are in the bounds
+    # for the current SDR. Use the defined enum 
+    # to determine the SDR and hardcode the values 
+    # for it
+    pass
+
 def init_rtl_task(args):
     sdr_task = None
-    default = None
-    sdr = RtlSdr()
     
-    center_freq = args.center
     samp_rate = args.rate
+    center_freq = args.center
+    gain = args.gain
+    samp_size = RtlSdr.DEFAULT_READ_SIZE
+    
     out_file = args.file
-    sdr_gain = args.gain
     verbose = args.verbose
 
-    if args.temp_demod:
-        default = temp_default
-    elif args.fm_demod:
-        default = fm_default
-    elif args.adsb_demod:
-        default = adsb_default
-    elif args.scan_fm:
-        default = scan_fm_default
-    
-    if not center_freq:
-        center_freq = default['center_freq']
-    if not samp_rate:
-        samp_rate = default['samp_rate']
-    if not sdr_gain:
-        sdr_gain = default['gain']
     if not out_file:
         out_file = ''
 
     if args.temp_demod:
         sdr_task = TempDemod(samp_rate, verbose, out_file)
     elif args.fm_demod:
-        sdr_task = FmDemod(samp_rate, verbose, out_file)
+        sdr_task = FmDemod(samp_rate, center_freq, gain, samp_size, verbose, out_file)
     elif args.adsb_demod:
         sdr_task = AdsbDemod(samp_rate, verbose, out_file)
     elif args.fft_sink:
-        lower_lim = args.limit
+        limit = args.limit
         persis = args.persistence
-        sdr_task = FftSink(samp_rate, lower_lim, persis)
+        sdr_task = FftSink(samp_rate, center_freq, gain, samp_size, True, limit, persis)
     elif args.raw_iq:
-        on_active = args.on_active
         diff = args.diff
-        if not diff:
-            diff = 0
-        sdr_task = RawIQ(samp_rate, verbose, out_file, on_active, diff)
+        sdr_task = RawIQ(samp_rate, verbose, out_file, diff)
     elif args.scan_fm:
-        sdr_task = ScanFm(samp_rate)
+        sdr_task = ScanFm(samp_rate, center_freq, gain, samp_size)
 
-    sdr.center_freq = center_freq
-    sdr.sample_rate = samp_rate
-    sdr.gain = sdr_gain
-
-    return sdr, sdr_task
+    return sdr_task
 
 
-async def streaming(sdr, sdr_task, sdr_samp_size):
-    await sdr_task.run(sdr)
-
-    #await sdr.stop()
-
-    sdr.close()
-
+async def streaming(sdr_task, time):
+    await sdr_task.run(time)
 
 parser = argparse.ArgumentParser(description="A toolkit for the RTL-SDR")
 init_parser(parser)
 args = parser.parse_args()
 
-# sdr_samp_size = RtlSdr.DEFAULT_READ_SIZE
-sdr_samp_size = 2**14
+time = 0
 
-sdr, sdr_task = init_rtl_task(args)
+sdr_task = init_rtl_task(args)
                          
 loop = asyncio.get_event_loop()
-loop.run_until_complete(streaming(sdr, sdr_task, sdr_samp_size))
+loop.run_until_complete(streaming(sdr_task, time))
 loop.close()

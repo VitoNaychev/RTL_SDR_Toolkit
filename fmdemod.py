@@ -5,15 +5,22 @@ from sdrtask import SDRTask
 from demodtask import DemodTask
 
 class FmDemod(DemodTask):
-    f_bw = 200000
-    audio_freq = 44100
-    def __init__(self, samp_rate, verbose = True, file_name = ''):
-        super().__init__(samp_rate, verbose, file_name)
+    defaults = {
+            'samp_rate' : 1e6,
+            'center_freq' : 89.4e6,
+            'gain' : 'auto',
+            'samp_size' : 2e19
+            }
+    
+    FM_BW = 200000
+    AUDIO_RATE = 44100
+    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
+        super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
 
-        self.dec_rate = int(self.samp_rate / FmDemod.f_bw)
+        self.dec_rate = int(self.samp_rate / FmDemod.FM_BW)
         self.samp_rate_fm = int(self.samp_rate / self.dec_rate)
 
-        self.dec_audio = int(self.samp_rate_fm / FmDemod.audio_freq)
+        self.dec_audio = int(self.samp_rate_fm / FmDemod.AUDIO_RATE)
         self.audio_rate = int(self.samp_rate_fm / self.dec_audio)
         self.stream = None
 

@@ -2,21 +2,45 @@ import asyncio
 from rtlsdr import RtlSdr
 
 class SDRTask:
-    def __init__(self, samp_rate):
-        self.samp_rate = samp_rate
+    defaults = {}
+    def __init__(self, samp_rate, center_freq, gain, samp_size):
+        # Instantiate rtl-sdr instance.
+        self._sdr = RtlSdr()
+        
+        # Set the defaults if any of the above values
+        # is skipped. The dicitonary 'defaults' is used from 
+        # the child classes to set its default values.
+        self.set_defaults()
+
+        if samp_rate:
+            self.samp_rate = samp_rate
+            self._sdr.sample_rate = samp_rate
+        if center_freq:
+            self._sdr.center_freq = center_freq
+        if gain:
+            self._sdr.gain = gain
+        if samp_size:
+            self.samp_size = samp_size
+
+        
+    def set_defaults(self):
+        self.samp_rate = self.defaults['samp_rate']
+        self._sdr.sample_rate = self.defaults['samp_rate'] 
+        self._sdr.center_freq = self.defaults['center_freq'] 
+        self._sdr.samp_rate = self.defaults['gain'] 
+        self.samp_size = self.defaults['samp_size'] 
 
     def execute(self, samples):
         pass
 
-    async def run(self, sdr, time = 0, samp_size = RtlSdr.DEFAULT_READ_SIZE):
-        samp_size = 2**16
+    async def run(self, time = 0):
         time_pass = 0
         
-        async for samples in sdr.stream(samp_size):
+        async for samples in self._sdr.stream(self.samp_size):
             self.execute(samples)
             
             if time:
-                time_pass += samp_size
+                time_pass += self._samp_size
 
             if time_pass / self.samp_rate >= time and time:
                 break

@@ -716,7 +716,7 @@ Text Label 7500 2100 1    50   ~ 0
 VDD
 Text Label 8900 2850 2    50   ~ 0
 VDD
-Text Label 9025 3750 0    50   ~ 0
+Text Label 9000 3750 0    50   ~ 0
 VDD
 Text Label 6850 3700 0    50   ~ 0
 VDD
@@ -1434,10 +1434,10 @@ F 3 "https://www.psemi.com/pdf/datasheets/pe64102ds.pdf" H 2525 3150 50  0001 C 
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:CP1 C?
+L Device:CP1 C19
 U 1 1 5C8125A4
 P 2700 3750
-F 0 "C?" V 2940 3750 50  0000 C CNN
+F 0 "C19" V 2940 3750 50  0000 C CNN
 F 1 "0,5pF" V 2840 3750 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 2700 3750 50  0001 C CNN
 F 3 "~" H 2700 3750 50  0001 C CNN
@@ -1451,10 +1451,10 @@ Wire Wire Line
 Wire Wire Line
 	2850 3750 2975 3750
 $Comp
-L Device:CP1 C?
+L Device:CP1 C20
 U 1 1 5C871ABB
 P 9250 3550
-F 0 "C?" V 9480 3550 50  0000 C CNN
+F 0 "C20" V 9480 3550 50  0000 C CNN
 F 1 "0,5pF" V 9400 3550 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 9250 3550 50  0001 C CNN
 F 3 "~" H 9250 3550 50  0001 C CNN

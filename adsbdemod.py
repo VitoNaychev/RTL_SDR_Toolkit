@@ -1,16 +1,22 @@
 import numpy as np
 from sdrtask import SDRTask
+from demodtask import DemodTask
 
-class AdsbDemod(SDRTask):
+class AdsbDemod(DemodTask):
+    defaults = {
+            'samp_rate' : 2e6,
+            'center_freq' : 1090e6,
+            'gain' : 49.6,
+            'samp_size' : 2**18
+            }
+    
     MODES_PREAMBLE = 8          # microseconds
     MODES_LONG_MSG_BITS = 112
     MODES_SHORT_MSG_BITS = 56
     MODES_FULL_LEN = MODES_PREAMBLE + MODES_LONG_MSG_BITS
     
-    def __init__(self, samp_rate, verbose = True, file_name = ''):
-        super().__init__(samp_rate)
-        self.verbose = verbose
-        self.file_name = file_name
+    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
+        super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
     
     def calc_magnitude(samples):
         samples *= 255

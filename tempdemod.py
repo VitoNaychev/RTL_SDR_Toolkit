@@ -5,17 +5,22 @@ from sdrtask import SDRTask
 from demodtask import DemodTask
 
 class TempDemod(DemodTask):
-    '''Class used for the demodulation and decoding of the 
-    signal sent from a temperature sensor'''
-    def __init__(self, samp_rate, verbose = True, file_name = ''):
-        super().__init__(samp_rate, verbose, file_name)
+    defaults = {
+            'samp_rate' : 1e6,
+            'center_freq' : 433.7e6,
+            'gain' : 40.2,
+            'samp_size' : 2**19
+            }
+    
+    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
+        super().__init__(samp_rate, center_freq, gain, samp_size,  verbose, file_name)
         self.dig_data = []
         self.prev_switch = []
     
-    def calc_ampl(samples):
-        samp_ampl = samples.real ** 2 + samples.imag ** 2
-        TempDemod.calc_mean_ampl(samp_ampl)
-        return samp_ampl
+    def calc_magnitude(samples):
+        mag = samples.real ** 2 + samples.imag ** 2
+        TempDemod.calc_mean_ampl(mag)
+        return mag
     
     def calc_mean_ampl(samp_ampl):
         # return sum(samp_ampl) / len(samp_ampl)
@@ -101,8 +106,8 @@ class TempDemod(DemodTask):
         return str_data
     
     def execute(self, samples):
-        samp_ampl = TempDemod.calc_ampl(samples)
-        off_switch = self.calc_offswitchings(samp_ampl)
+        mag = TempDemod.calc_magnitude(samples)
+        off_switch = self.calc_offswitchings(mag)
         new_data = TempDemod.digitize_signal(off_switch)
         if not np.any(new_data):
             return

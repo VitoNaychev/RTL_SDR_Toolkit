@@ -7,6 +7,7 @@ from enum import Enum
 import os
 import time
 
+# 1.Fix labling and exponent in the interactive plot
 class FftSink(DisplayTask):
     defaults = {
             'samp_rate' : 2e6,
@@ -19,9 +20,10 @@ class FftSink(DisplayTask):
         super().__init__(samp_rate, center_freq, gain, samp_size)
         self.limit = limit
         self.persis = persis
-        self.flag = True
-
-        if cmd:
+        self.cmd = cmd
+        
+        # Depending on the mode initiate the correct FFT plot
+        if self.cmd:
             self.init_cmd_fft()
         else:
             self.init_inter_fft()
@@ -30,32 +32,50 @@ class FftSink(DisplayTask):
         pass
 
     def init_inter_fft(self):
+        # Iniciate pyplot interactive mode
         plt.ion()
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111)
-        if limit:
-            self.ax.set_ylim(limit, 0)
 
-        # variables to be initailised in the execute method to 
-        # use one less parameter in initialisation of class
-        self.persis_arr = None
-        self.line1 = None
-        self.line2 = None
+        # Create a Figure
+        self.fig = plt.figure()
+        
+        # Get the Axes from the subplot
+        self.ax = self.fig.add_subplot(111)
+
+        # Set the Y axes lower limit to 'limit'
+        if self.limit:
+            self.ax.set_ylim(self.limit, 0)
+
+        # Create an array representing the x shape of the plot
+        x_shape = np.linspace(-self.samp_rate / 2, self.samp_rate/2, self.samp_size)
+        x_shape += self._sdr.center_freq
+        
+        # Create the persistence array and set it's value bellow
+        # the lower limit
+        self.persis_arr = [self.limit - 10] * self.samp_size
+        
+        # Create the FFT and Persistance Line2D objects by
+        # calling the Axis.plot method
+        self.fft_line, = self.ax.plot(x_shape, [self.limit] * self.samp_size)
+        self.persis_line, = self.ax.plot(x_shape, self.persis_arr)
     
 
-    def update_inter_fft(self, samp_fft):
+    def update_inter_fft(self, fft_arr):
+        # Set the new data for the FFT line
+        self.fft_line.set_ydata(fft_arr)
         if self.persis:
-            for i, sf in enumerate(samp_fft, 0):
-                if sf > self.persis_arr[i]:
-                    self.persis_arr[i] = sf
-
-        self.line1.set_ydata(samp_fft)
-        if self.persis:
-            self.line2.set_ydata(self.persis_arr)
+            # Check if any of the new FFT values exceeds the
+            # persistence arrays values and update them if yes
+            self.persis_arr = [fft_samp if persis_samp < fft_samp else persis_samp \
+                            for fft_samp, persis_samp in zip(fft_arr, self.persis_arr)]
+            # Set the new data for the persistence line
+            self.persis_line.set_ydata(self.persis_arr)
+        
+        # Update the new data on the canvas
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        
 
-    def update_cmd_fft(self, samp_fft):
+    def update_cmd_fft(self, fft_arr):
         # Clear tty from last render
         os.system('clear')
 
@@ -71,12 +91,12 @@ class FftSink(DisplayTask):
         ch_count = columns - y_axis_size - 1
 
         # Caclulate what part of the FFT each chunk will hold
-        chunk_size = len(samp_fft) // ch_count
+        chunk_size = len(fft_arr) // ch_count
         
         # Calculate the corresponding FFT for each chunk
         # by taking the average value from the original FFT
         # for each chunk size
-        chunks_fft = [np.average(samp_fft[x:x+chunk_size]) for x in range(0, len(samp_fft), chunk_size)]
+        chunks_fft = [np.average(fft_arr[x:x+chunk_size]) for x in range(0, len(fft_arr), chunk_size)]
         chunks_fft = np.array(chunks_fft)
 
         # Calculate the scaling factor for the chunks 
@@ -168,18 +188,12 @@ class FftSink(DisplayTask):
         
 
     def execute(self, samples):
-        # if self.flag:
-        #     x = np.linspace(-self.samp_rate / 2, self.samp_rate/2, len(samples))
-        #     self.persis_arr = [self.limit - 10] * len(x)
-        #     
-        #     self.line1, = self.ax.plot(x, [self.limit] * len(x))
-        #     self.line2, = self.ax.plot(x, self.persis_arr) # linewidth=0.5 to change line width
-        #     self.flag = False
-        #     
-        samp_fft = helpers.calc_fft(samples, self.samp_rate, len(samples), True)
+        # Calculate FFT of current samples
+        fft_arr = helpers.calc_fft(samples, self.samp_rate, len(samples), True)
         
-        if cmd:
-            self.update_inter_fft(samp_fft)
+        # Depending on the chosen mode update the FFT plot
+        if self.cmd:
+            self.update_cmd_fft(fft_arr)
         else:
-            self.update_cmd_fft(samp_fft)
+            self.update_inter_fft(fft_arr)
 

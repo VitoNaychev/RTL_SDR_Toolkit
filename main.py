@@ -39,6 +39,7 @@ def init_parser(parser):
                                                              activity''')
     parser.add_argument("--limit", type=int, help="Set lower limit by Y axis for FFT Sink")
     parser.add_argument("--persistence", action="store_true", help="Display highest values over time")
+    parser.add_argument("--cmd", action="store_true", help="Choose CMD mode for the FFT Sink")
 
 
 def check_args(args):
@@ -55,7 +56,7 @@ def init_rtl_task(args):
     center_freq = args.center
     gain = args.gain
     samp_size = RtlSdr.DEFAULT_READ_SIZE
-    
+
     out_file = args.file
     verbose = args.verbose
 
@@ -71,7 +72,8 @@ def init_rtl_task(args):
     elif args.fft_sink:
         limit = args.limit
         persis = args.persistence
-        sdr_task = FftSink(samp_rate, center_freq, gain, samp_size, True, limit, persis)
+        cmd = args.cmd
+        sdr_task = FftSink(samp_rate, center_freq, gain, samp_size, cmd, limit, persis)
     elif args.raw_iq:
         diff = args.diff
         sdr_task = RawIQ(samp_rate, verbose, out_file, diff)

@@ -1,38 +1,38 @@
 import numpy as np
-from sdrtask import SDRTask
 from demodtask import DemodTask
+
 
 class AdsbDemod(DemodTask):
     defaults = {
-            'samp_rate' : 2e6,
-            'center_freq' : 1090e6,
-            'gain' : 49.6,
-            'samp_size' : 2**18
+            'samp_rate': 2e6,
+            'center_freq': 1090e6,
+            'gain': 44.5,
+            'samp_size': 2**18
             }
-    
+
     MODES_PREAMBLE = 8          # microseconds
     MODES_LONG_MSG_BITS = 112
     MODES_SHORT_MSG_BITS = 56
     MODES_FULL_LEN = MODES_PREAMBLE + MODES_LONG_MSG_BITS
-    
-    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
+
+    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose=True, file_name=''):
         super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
-    
+
     def calc_magnitude(samples):
-        samples *= 255
+        samples *= 128
         samp_mag = np.around(np.absolute(samples) * 360)
         return samp_mag
 
     def detect_out_phase(mag):
         if mag[3] > mag[2] / 3:
             return 1
-        if mag[10] > mag[9] / 3: 
+        if mag[10] > mag[9] / 3:
             return 1
-        if mag[6] > mag[7] / 3: 
+        if mag[6] > mag[7] / 3:
             return 1
         # if samp_mag[-1] > samp_mag[1] / 3 return 1
         return 0
-    
+
     def correct_phase(data_mag):
         for i in range(0, AdsbDemod.MODES_LONG_MSG_BITS*2 - 2, 2):
             if(data_mag[i] > data_mag[i + 1]):
@@ -41,7 +41,7 @@ class AdsbDemod(DemodTask):
                 data_mag[i + 2] = (data_mag[i + 2] * 4) / 5
 
         return data_mag
-    
+
     def check_preamble(mag):
         # PREAMBLE STRUCTURE
         # Each sample has a length of 0.5 microseconds
@@ -63,26 +63,25 @@ class AdsbDemod(DemodTask):
         # 13  -
         # 14  --
         # 15  -
-        if not (mag[0] > mag[1] and \
-             mag[1] < mag[2] and \
-             mag[2] > mag[3] and \
-             mag[3] < mag[0] and \
-             mag[4] < mag[0] and \
-             mag[5] < mag[0] and \
-             mag[6] < mag[0] and \
-             mag[7] > mag[8] and \
-             mag[8] < mag[9] and \
-             mag[9] > mag[6]):
+        if not (mag[0] > mag[1] and
+                mag[1] < mag[2] and
+                mag[2] > mag[3] and
+                mag[3] < mag[0] and
+                mag[4] < mag[0] and
+                mag[5] < mag[0] and
+                mag[6] < mag[0] and
+                mag[7] > mag[8] and
+                mag[8] < mag[9] and
+                mag[9] > mag[6]):
             return 0
-        
-        
+
         high = (mag[0] + mag[2] + mag[7] + mag[9]) / 6
-        
+
         # Check if the 4th and 5th bit of the preamble are lower than the
         # average high. Those two bits are the furthest from two high states
         # which means that that there should be no energy leakege from previous
         # high bits. If those two have a higher level than the average it means
-        # that even after applying correction we won't get a valid message 
+        # that even after applying correction we won't get a valid message
         if mag[4] >= high or mag[5] >= high:
             return 0
 
@@ -92,9 +91,9 @@ class AdsbDemod(DemodTask):
            mag[13] >= high or \
            mag[14] >= high:
             return 0
-        
+
         return 1
-    
+
     def return_msg_type(msg_type):
         if msg_type == 16 or msg_type == 17 or \
            msg_type == 19 or msg_type == 20 or \
@@ -106,27 +105,24 @@ class AdsbDemod(DemodTask):
     def pack_into_bytes(data_bits):
         data_bytes = []
         for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS // 2, 8):
-            cur_byte =  data_bits[j + 0] << 0 | \
-                        data_bits[j + 1] << 1 | \
-                        data_bits[j + 2] << 2 | \
-                        data_bits[j + 3] << 3 | \
-                        data_bits[j + 4] << 4 | \
-                        data_bits[j + 5] << 5 | \
-                        data_bits[j + 6] << 6 | \
-                        data_bits[j + 7] << 7
+            cur_byte = data_bits[j + 0] << 0 | \
+                       data_bits[j + 1] << 1 | \
+                       data_bits[j + 2] << 2 | \
+                       data_bits[j + 3] << 3 | \
+                       data_bits[j + 4] << 4 | \
+                       data_bits[j + 5] << 5 | \
+                       data_bits[j + 6] << 6 | \
+                       data_bits[j + 7] << 7
 
             data_bytes.append(cur_byte)
 
         return data_bytes
-            
 
-    
     def execute(self, samples):
-
         use_correction = False
         mag = AdsbDemod.calc_magnitude(samples)
         mag_cpy = []
-        
+
         # Cycle through array of samples searching for a valid message
         # structure within it
         for i in range(len(mag) - AdsbDemod.MODES_FULL_LEN * 2):
@@ -172,7 +168,7 @@ class AdsbDemod(DemodTask):
 
             if(i and AdsbDemod.detect_out_phase(mag_cpy)):
                 mag_cpy = AdsbDemod.correct_phase(mag_cpy)
-            
+
             bits = []
 
             for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS, 2):
@@ -189,30 +185,27 @@ class AdsbDemod(DemodTask):
                     bits.append(1)
                 else:
                     bits.append(0)
-            
+
             data_bytes = AdsbDemod.pack_into_bytes(bits)
-            
+
             # The downlink format is contained within the first 5 bits of the
             # ADS-B message structure. With it we can determine the length of
             # the message
             # +--------+--------+-----------+--------------------------+---------+
             # |  DF 5  |  ** 3  |  ICAO 24  |          DATA 56         |  PI 24  |
             # +--------+--------+-----------+--------------------------+---------+
-            
+
             msg_type = data_bytes[0] >> 3
-            
+
             msg_len = AdsbDemod.return_msg_type(msg_type) // 8
             delta = 0
             for j in range(0, msg_len * 8 * 2, 2):
-                delta += abs(data_mag[j] - \
+                delta += abs(data_mag[j] -
                              data_mag[j + 1])
 
             delta /= msg_len * 4
-            
 
             if delta < 10 * 255:
                 continue
 
-            print('[{}]'.format(', '.join(hex(x) for x in data_bytes)))   
-            
-            #print(data_bytes)
+            print('[{}]'.format(', '.join(hex(x) for x in data_bytes)))

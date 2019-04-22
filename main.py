@@ -4,7 +4,11 @@ import asyncio
 import numpy as np
 import scipy.signal as signal
 import pyaudio
+import argparse
+import sys
+
 from rtlsdr import RtlSdr
+
 from tempdemod import TempDemod
 from fmdemod import FmDemod
 from recordsamp import RecordSamp
@@ -17,7 +21,7 @@ from adsbdemod import AdsbDemod
 from transmittask import TransmitTask
 from jammertask import JammerTask
 from replaytask import ReplayTask
-import argparse
+
 
 def init_parser(parser):
     group = parser.add_mutually_exclusive_group()
@@ -51,7 +55,7 @@ def check_args(args):
 
 def init_rtl_task(args):
     sdr_task = None
-    
+
     samp_rate = args.rate
     center_freq = args.center
     gain = args.gain
@@ -68,7 +72,7 @@ def init_rtl_task(args):
     elif args.fm_demod:
         sdr_task = FmDemod(samp_rate, center_freq, gain, samp_size, verbose, out_file)
     elif args.adsb_demod:
-        sdr_task = AdsbDemod(samp_rate, verbose, out_file)
+        sdr_task = AdsbDemod(samp_rate, center_freq, gain, samp_size, verbose, out_file)
     elif args.fft_sink:
         limit = args.limit
         persis = args.persistence
@@ -93,7 +97,13 @@ args = parser.parse_args()
 time = 0
 
 sdr_task = init_rtl_task(args)
-                         
+
 loop = asyncio.get_event_loop()
-loop.run_until_complete(streaming(sdr_task, time))
+try:
+    loop.run_until_complete(streaming(sdr_task, time))
+except KeyboardInterrupt:
+#    sdr_task._sdr.close()
+    loop.stop()
+
+sys.exit()
 loop.close()

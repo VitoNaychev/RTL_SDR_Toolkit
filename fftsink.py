@@ -1,19 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import helpers
-from scipy.fftpack import fft
 from displaytask import DisplayTask
-from enum import Enum
 import os
-import time
+
 
 # 1.Fix labling and exponent in the interactive plot
 class FftSink(DisplayTask):
     defaults = {
-            'samp_rate' : 2e6,
-            'center_freq' : 92.4e6,
-            'gain' : 40.1,
-            'samp_size' : 2**13
+            'samp_rate': 2e6,
+            'center_freq': 92.4e6,
+            'gain': 40.1,
+            'samp_size': 2**13
             }
 
     def __init__(self, samp_rate, center_freq, gain, samp_size, cmd, limit, persis = False):
@@ -21,7 +19,7 @@ class FftSink(DisplayTask):
         self.limit = limit
         self.persis = persis
         self.cmd = cmd
-        
+
         # Depending on the mode initiate the correct FFT plot
         if self.cmd:
             self.init_cmd_fft()
@@ -37,7 +35,7 @@ class FftSink(DisplayTask):
 
         # Create a Figure
         self.fig = plt.figure()
-        
+
         # Get the Axes from the subplot
         self.ax = self.fig.add_subplot(111)
 
@@ -48,16 +46,16 @@ class FftSink(DisplayTask):
         # Create an array representing the x shape of the plot
         x_shape = np.linspace(-self.samp_rate / 2, self.samp_rate/2, self.samp_size)
         x_shape += self._sdr.center_freq
-        
+
         # Create the persistence array and set it's value bellow
         # the lower limit
         self.persis_arr = [self.limit - 10] * self.samp_size
-        
+
         # Create the FFT and Persistance Line2D objects by
         # calling the Axis.plot method
         self.fft_line, = self.ax.plot(x_shape, [self.limit] * self.samp_size)
         self.persis_line, = self.ax.plot(x_shape, self.persis_arr)
-    
+
 
     def update_inter_fft(self, fft_arr):
         # Set the new data for the FFT line
@@ -69,11 +67,11 @@ class FftSink(DisplayTask):
                             for fft_samp, persis_samp in zip(fft_arr, self.persis_arr)]
             # Set the new data for the persistence line
             self.persis_line.set_ydata(self.persis_arr)
-        
+
         # Update the new data on the canvas
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        
+
 
     def update_cmd_fft(self, fft_arr):
         # Clear tty from last render
@@ -92,7 +90,7 @@ class FftSink(DisplayTask):
 
         # Caclulate what part of the FFT each chunk will hold
         chunk_size = len(fft_arr) // ch_count
-        
+
         # Calculate the corresponding FFT for each chunk
         # by taking the average value from the original FFT
         # for each chunk size
@@ -119,7 +117,7 @@ class FftSink(DisplayTask):
             # First we take the inverted scale so we can
             # convert between rows and dBm
             inv_scale = 1 / scale
-            
+
             # Next we want the values to be evenly spaced
             # and also this scale to change when the size 
             # of the tty changes
@@ -129,7 +127,7 @@ class FftSink(DisplayTask):
                 pilar_row = ' ' * y_axis_size
 
             pilar_row += ''.join(['|' if pilar >= i else ' ' for pilar in pilars])
-                
+
             print(pilar_row)
 
         # We want to show the x axis underneath the FFT plot
@@ -137,7 +135,7 @@ class FftSink(DisplayTask):
         # columns and the frequency band. Because the frequencies
         # will be shown in MHz we will space them in .25 MHz chunks
         freq_scale = ch_count / (self.samp_rate / 1e6)
-        
+
         # It is highly unlikely that by multiplying the current
         # column times the frequency scale we will get a 
         # number that can be divided percicely by 25. Because of
@@ -155,15 +153,15 @@ class FftSink(DisplayTask):
                 # Subtract the sampling rate divided by two to get
                 # the positive and negative freqency spectrumn
                 freq_val -= round(self.samp_rate / 1e6, 2) / 2
-                
+
                 # Sum with the center frequency of the SDR to get
                 # the actual frequency band we are representing
                 freq_val += round(self._sdr.center_freq / 1e6, 2)
-                
+
                 # Round the frequency value to the second
                 # decimal place
                 freq_val = round(freq_val, 2)
-                
+
                 # Convert to string and add the MHz lable
                 lable_str = str(freq_val) + ' MHz'
 
@@ -173,7 +171,7 @@ class FftSink(DisplayTask):
                     # If yes break the while cycle and continue to
                     # print.
                     break
-                else:   
+                else:
                     # Else add the length of the string to the
                     # counter 'i' and add the string to the
                     # lable field
@@ -184,16 +182,14 @@ class FftSink(DisplayTask):
                 i += 1
 
         print(x_axis)
-        
-        
+
 
     def execute(self, samples):
         # Calculate FFT of current samples
         fft_arr = helpers.calc_fft(samples, self.samp_rate, len(samples), True)
-        
+
         # Depending on the chosen mode update the FFT plot
         if self.cmd:
             self.update_cmd_fft(fft_arr)
         else:
             self.update_inter_fft(fft_arr)
-

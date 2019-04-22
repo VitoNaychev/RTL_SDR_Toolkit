@@ -157,7 +157,7 @@ U 1 1 5C64AF78
 P 3120 3550
 F 0 "L1" H 3000 3600 50  0000 L CNN
 F 1 "4nH" H 2975 3500 50  0000 L CNN
-F 2 "Inductor_SMD:L_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 3120 3550 50  0001 C CNN
+F 2 "Inductor_SMD:L_0402_1005Metric" H 3120 3550 50  0001 C CNN
 F 3 "~" H 3120 3550 50  0001 C CNN
 	1    3120 3550
 	1    0    0    -1  
@@ -168,7 +168,7 @@ U 1 1 5C64B1C8
 P 5350 3500
 F 0 "L2" H 5225 3550 50  0000 L CNN
 F 1 "4nH" H 5200 3450 50  0000 L CNN
-F 2 "Inductor_SMD:L_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 5350 3500 50  0001 C CNN
+F 2 "Inductor_SMD:L_0402_1005Metric" H 5350 3500 50  0001 C CNN
 F 3 "~" H 5350 3500 50  0001 C CNN
 	1    5350 3500
 	1    0    0    -1  
@@ -179,7 +179,7 @@ U 1 1 5C64BD27
 P 7500 3500
 F 0 "L3" H 7375 3550 50  0000 L CNN
 F 1 "4nH" H 7350 3450 50  0000 L CNN
-F 2 "Inductor_SMD:L_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 7500 3500 50  0001 C CNN
+F 2 "Inductor_SMD:L_0402_1005Metric" H 7500 3500 50  0001 C CNN
 F 3 "~" H 7500 3500 50  0001 C CNN
 	1    7500 3500
 	1    0    0    -1  
@@ -1451,4 +1451,38 @@ Wire Wire Line
 	9725 3400 9725 4425
 Wire Wire Line
 	9850 3375 9850 4375
+$Comp
+L Connector:Conn_01x02_Male J4
+U 1 1 5CBAC797
+P 775 4625
+F 0 "J4" H 881 4803 50  0000 C CNN
+F 1 "Conn_01x02_Male" H 881 4712 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 775 4625 50  0001 C CNN
+F 3 "~" H 775 4625 50  0001 C CNN
+	1    775  4625
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x02_Male J5
+U 1 1 5CBACE4F
+P 10775 4725
+F 0 "J5" H 10881 4903 50  0000 C CNN
+F 1 "Conn_01x02_Male" H 10881 4812 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 10775 4725 50  0001 C CNN
+F 3 "~" H 10775 4725 50  0001 C CNN
+	1    10775 4725
+	-1   0    0    -1  
+$EndComp
+Text Label 1100 3450 3    50   ~ 0
+SIG_IN
+Text Label 975  4625 0    50   ~ 0
+SIG_IN
+Text Label 975  4725 0    50   ~ 0
+GND
+Text Label 10550 2850 3    50   ~ 0
+SIG_OUT
+Text Label 10575 4725 2    50   ~ 0
+SIG_OUT
+Text Label 10575 4825 2    50   ~ 0
+GND
 $EndSCHEMATC

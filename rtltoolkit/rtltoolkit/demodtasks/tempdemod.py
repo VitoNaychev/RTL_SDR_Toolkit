@@ -1,34 +1,34 @@
 import numpy as np
-import math
 from datetime import datetime
-from sdrtask import SDRTask
-from demodtask import DemodTask
+
+from rtltoolkit.basetasks.demodtask import DemodTask
+
 
 class TempDemod(DemodTask):
     defaults = {
-            'samp_rate' : 1e6,
-            'center_freq' : 433.7e6,
-            'gain' : 40.2,
-            'samp_size' : 2**19
+            'samp_rate': 1e6,
+            'center_freq': 433.7e6,
+            'gain': 40.2,
+            'samp_size': 2**19
             }
-    
-    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
+
+    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose=True, file_name=''):
         super().__init__(samp_rate, center_freq, gain, samp_size,  verbose, file_name)
         self.dig_data = []
         self.prev_switch = []
-    
+
     def calc_magnitude(samples):
         mag = samples.real ** 2 + samples.imag ** 2
         TempDemod.calc_mean_ampl(mag)
         return mag
-    
+
     def calc_mean_ampl(samp_ampl):
         # return sum(samp_ampl) / len(samp_ampl)
         return (max(samp_ampl) + min(samp_ampl)) / 2
 
     def calc_offswitchings(self, samp_ampl):
         j = 0
-        off_count = [0] # number of samples in each off-switching
+        off_count = [0]  # number of samples in each off-switching
         samp_ampl = np.concatenate([self.prev_switch, samp_ampl])
 
         ampl_mean = TempDemod.calc_mean_ampl(samp_ampl)
@@ -46,7 +46,7 @@ class TempDemod(DemodTask):
             off_count.pop()
 
         return off_count
-    
+
     def digitize_signal(off_count):
         dig_data = [0] * len(off_count)
 
@@ -59,13 +59,13 @@ class TempDemod(DemodTask):
                 dig_data[i] = 2
 
         return dig_data
-    
+
     def get_humidity(sens_data):
         humid_int = 0
         humid_bin = sens_data[28:36]
         for bin_num in humid_bin:
             humid_int = (humid_int << 1) | bin_num
-        return humid_int        
+        return humid_int
 
     def get_temp(sens_data):
         temp_int = 0
@@ -98,13 +98,13 @@ class TempDemod(DemodTask):
                 temp_int = TempDemod.get_temp(sens_data)
                 chan_int = TempDemod.get_channel(sens_data)
 
-                str_data.append("Temperature: " + str(temp_int) + "°C " + "Humidity: " 
+                str_data.append("Temperature: " + str(temp_int) + "°C " + "Humidity: "
                                  + str(humid_int) + "% " + "Channel: " + str(chan_int))
             except ValueError:
                 break
 
         return str_data
-    
+
     def execute(self, samples):
         mag = TempDemod.calc_magnitude(samples)
         off_switch = self.calc_offswitchings(mag)
@@ -117,6 +117,6 @@ class TempDemod(DemodTask):
         if self.file_name:
             with open(self.file_name, 'a+') as f:
                 for string in str_data:
-                    f.write('{time}\n{value}\n'.format(time = datetime.now(), value = string))
+                    f.write('{time}\n{value}\n'.format(time=datetime.now(), value=string))
                     if self.verbose:
                         print(string)

@@ -9,18 +9,14 @@ import sys
 
 from rtlsdr import RtlSdr
 
-from tempdemod import TempDemod
-from fmdemod import FmDemod
-from recordsamp import RecordSamp
-from sdrtask import SDRTask
-from rawiq import RawIQ
-from fftsink import FftSink
-from scanfm import ScanFm
-from adsbdemod import AdsbDemod
-from adsbdemod import AdsbDemod
-from transmittask import TransmitTask
-from jammertask import JammerTask
-from replaytask import ReplayTask
+from rtltoolkit.demodtasks.tempdemod import TempDemod
+from rtltoolkit.demodtasks.fmdemod import FmDemod
+from rtltoolkit.demodtasks.adsbdemod import AdsbDemod
+from rtltoolkit.recordtasks.rawiq import RawIQ
+from rtltoolkit.displaytasks.fftsink import FftSink
+from rtltoolkit.displaytasks.scanfm import ScanFm
+from rtltoolkit.transmittasks.jammertask import JammerTask
+from rtltoolkit.transmittasks.replaytask import ReplayTask
 
 
 def init_parser(parser):
@@ -48,8 +44,8 @@ def init_parser(parser):
 
 def check_args(args):
     # Check if all the arguments are in the bounds
-    # for the current SDR. Use the defined enum 
-    # to determine the SDR and hardcode the values 
+    # for the current SDR. Use the defined enum
+    # to determine the SDR and hardcode the values
     # for it
     pass
 

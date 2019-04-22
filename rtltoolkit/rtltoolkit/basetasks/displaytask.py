@@ -1,4 +1,4 @@
-from sdrtask import SDRTask
+from rtltoolkit.basetasks.sdrtask import SDRTask
 
 class DisplayTask(SDRTask):
     def __init__(self, samp_rate, center_freq, gain, samp_size):

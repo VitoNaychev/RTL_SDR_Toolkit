@@ -1,5 +1,6 @@
 import numpy as np
-from demodtask import DemodTask
+
+from rtltoolkit.basetasks.demodtask import DemodTask
 
 
 class AdsbDemod(DemodTask):
@@ -127,10 +128,10 @@ class AdsbDemod(DemodTask):
         # structure within it
         for i in range(len(mag) - AdsbDemod.MODES_FULL_LEN * 2):
             # All of the MODES lengths (defined in the begining of the class)
-            # are multiplied by two, because of the encoding of the data, unitl 
+            # are multiplied by two, because of the encoding of the data, unitl
             # the data is converted into bits.
             # The modulation is PPM(Pulse Position Modulation) and each
-            # pulse accompanied by and idle period represents a bit. Therefore 
+            # pulse accompanied by and idle period represents a bit. Therefore
             # if one bit is with a length of 1 ms each of the two pulses representing
             # it will have a length of 0.5 ms. Because of this the minimal sampling
             # rate needed to catch those short pulses is 2 MHz (T = 1/(2 * 10^6) = 0.5 ms)
@@ -157,7 +158,7 @@ class AdsbDemod(DemodTask):
             # Due to the fact that the sample period is equal to the length of the pulses
             # It is unlikely that the pulses will be totaly synchronised with the sampling
             # process. Therefore small correction can be made to fix this.
-            # The main problem is that if the pulses are not sampled properly they 
+            # The main problem is that if the pulses are not sampled properly they
             # may "leak" in two adjecent ones. Therefore phase correction is applied
             # if we detect that the difference between the low(OFF) and high(ON) levels
             # is too small which usually denotes incorrect(out of phase) sampling.

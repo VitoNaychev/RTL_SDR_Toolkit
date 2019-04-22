@@ -1,7 +1,9 @@
 import subprocess
 import tempfile
 import os
-from recordsamp import RecordSamp
+
+from rtltoolkit.helpers.recordsamp import RecordSamp
+
 
 class TransmitTask:
     def __init__(self, samp_rate, in_file):
@@ -27,9 +29,9 @@ class TransmitTask:
             file_name = f.name
 
             data.tofile(file_name)
-            subprocess.run(['sendiq', '-s ' + str(self.samp_rate), 
+            subprocess.run(['sendiq', '-s ' + str(self.samp_rate),
                     '-f ' + str(freq), '-t ' + 'double', '-i ' + file_name])
             os.unlink(f.name)
-            
+
             data = self.execute()
 

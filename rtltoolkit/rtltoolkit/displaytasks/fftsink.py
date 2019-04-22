@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import helpers
-from displaytask import DisplayTask
 import os
+
+from rtltoolkit.basetasks.displaytask import DisplayTask
+from rtltoolkit.helpers import ffthelpers
 
 
 # 1.Fix labling and exponent in the interactive plot
@@ -97,19 +98,19 @@ class FftSink(DisplayTask):
         chunks_fft = [np.average(fft_arr[x:x+chunk_size]) for x in range(0, len(fft_arr), chunk_size)]
         chunks_fft = np.array(chunks_fft)
 
-        # Calculate the scaling factor for the chunks 
+        # Calculate the scaling factor for the chunks
         # by taking the absolute value of the limit
         scale = rows / abs(self.limit)
 
         # We first move the FFT to the positive side of the
-        # nuerical values so that the smallest value will equal 
+        # nuerical values so that the smallest value will equal
         # 0 and the largest will equal the absolute value of the
-        # limit. 
+        # limit.
         scaled_chunks = ((np.array(chunks_fft) + abs(self.limit)) * scale)
 
         # After that we convert the array to a numpy one
         # and round each value. This way we have a scaled
-        # integer representing the numbers of characters 
+        # integer representing the numbers of characters
         # that will form the FFT's value
         pilars = np.round(scaled_chunks).astype(int)
 
@@ -119,7 +120,7 @@ class FftSink(DisplayTask):
             inv_scale = 1 / scale
 
             # Next we want the values to be evenly spaced
-            # and also this scale to change when the size 
+            # and also this scale to change when the size
             # of the tty changes
             if i % round(scale * 10) == 0:
                 pilar_row = str(round((i - rows) * inv_scale)) + ' -- '
@@ -137,7 +138,7 @@ class FftSink(DisplayTask):
         freq_scale = ch_count / (self.samp_rate / 1e6)
 
         # It is highly unlikely that by multiplying the current
-        # column times the frequency scale we will get a 
+        # column times the frequency scale we will get a
         # number that can be divided percicely by 25. Because of
         # this we multiply the frequency scale by 0.25 and after
         # rounding the number we get the closest column that can represent
@@ -145,7 +146,7 @@ class FftSink(DisplayTask):
         x_axis = ' ' * y_axis_size
         while i < columns:
             if i % round(freq_scale * 0.25) == 0:
-                # Get the frequency of the current column starting 
+                # Get the frequency of the current column starting
                 # with respect to the first one which has a relative
                 # value of 0 Hz when calculated with this equation
                 freq_val = i / round(freq_scale * 0.25) * 0.25
@@ -186,7 +187,7 @@ class FftSink(DisplayTask):
 
     def execute(self, samples):
         # Calculate FFT of current samples
-        fft_arr = helpers.calc_fft(samples, self.samp_rate, len(samples), True)
+        fft_arr = ffthelpers.calc_fft(samples, self.samp_rate, len(samples), True)
 
         # Depending on the chosen mode update the FFT plot
         if self.cmd:

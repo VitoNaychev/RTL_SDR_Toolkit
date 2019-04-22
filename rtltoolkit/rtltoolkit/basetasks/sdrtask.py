@@ -1,6 +1,7 @@
 import asyncio
 from rtlsdr import RtlSdr
 
+
 class SDRTask:
     defaults = {}
     def __init__(self, samp_rate, center_freq, gain, samp_size):

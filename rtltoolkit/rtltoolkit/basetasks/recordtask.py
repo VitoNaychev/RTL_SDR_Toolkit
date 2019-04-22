@@ -1,4 +1,5 @@
-from sdrtask import SDRTask
+from rtltoolkit.basetasks.sdrtask import SDRTask
+
 
 class RecordTask(SDRTask):
     def __init__(self, samp_rate, center_freq, gain, samp_size, verbose, file_name, crit_val):

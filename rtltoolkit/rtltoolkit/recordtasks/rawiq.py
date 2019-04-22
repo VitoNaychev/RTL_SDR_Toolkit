@@ -1,8 +1,9 @@
-from recordsamp import RecordSamp
-import helpers
-from sdrtask import SDRTask
-from recordtask import RecordTask
 import numpy as np
+
+from rtltoolkit.basetasks.recordtask import RecordTask
+from rtltoolkit.helpers.recordsamp import RecordSamp
+from rtltoolkit.helpers.ffthelpers import calc_fft
+
 
 class RawIQ(RecordTask):
     def __init__(self, samp_rate, center_freq, gain, samp_size, verbose, file_name, diff):
@@ -18,7 +19,7 @@ class RawIQ(RecordTask):
 
         samp_fft = None
         if self.diff:
-            samp_fft = helpers.calc_fft(samples, self.samp_rate, len(samples), average = True)
+            samp_fft = calc_fft(samples, self.samp_rate, len(samples), average = True)
             if min(samp_fft[100:]) + self.diff > max(samp_fft[100:]):
                 samples = np.array([])
 

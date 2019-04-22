@@ -1,8 +1,8 @@
 import numpy as np
 import pyaudio
 import scipy.signal as signal
-from sdrtask import SDRTask
-from demodtask import DemodTask
+
+from rtltoolkit.basetasks.demodtask import DemodTask
 
 # 1. Refactor code and remove 'self' where possible
 # 1.5. Deal with annoying warnings and remove pyadio messages
@@ -17,7 +17,7 @@ class FmDemod(DemodTask):
             'gain' : 'auto',
             'samp_size' : 2e19
             }
-    
+
     FM_BW = 200000
     AUDIO_RATE = 44100
     def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
@@ -67,11 +67,11 @@ class FmDemod(DemodTask):
     def scale_audio(samples):
         samples *= 10000 / np.max(np.abs(samples))
         return samples
-    
+
     def play_samples(audio_data, stream):
         audio_data = np.ndarray.tobytes(audio_data.astype("int16"))
         stream.write(audio_data)
-    
+
     def execute(self, samples):
         samples = np.array(samples)
         samples = FmDemod.focus_FM_signal(samples, self.samp_rate)

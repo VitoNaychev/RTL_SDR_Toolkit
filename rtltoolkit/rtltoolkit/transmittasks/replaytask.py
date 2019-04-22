@@ -1,4 +1,5 @@
-from transmittask import TransmitTask
+from rtltoolkit.basetasks.transmittask import TransmitTask
+
 
 class ReplayTask(TransmitTask):
     def execute(self):

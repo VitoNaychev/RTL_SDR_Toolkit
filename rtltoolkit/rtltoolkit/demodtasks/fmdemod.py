@@ -65,7 +65,7 @@ class FmDemod(DemodTask):
         return samples
 
     def scale_audio(samples):
-        samples *= 10000 / np.max(np.abs(samples))
+        samples *= 2**15 / np.max(np.abs(samples))
         return samples
 
     def play_samples(audio_data, stream):

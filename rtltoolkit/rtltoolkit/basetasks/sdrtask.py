@@ -5,11 +5,12 @@ from rtlsdr import RtlSdr
 class SDRTask:
     defaults = {}
     def __init__(self, samp_rate, center_freq, gain, samp_size):
-        # Instantiate rtl-sdr instance.
+        # Instantiate rtl-sdr instance. If no RTL-SDR is found
+        # a OSError will be raised which is handled in main.py
         self._sdr = RtlSdr()
 
         # Set the defaults if any of the above values
-        # is skipped. The dicitonary 'defaults' is used from 
+        # is skipped. The dicitonary 'defaults' is used from
         # the child classes to set its default values.
         self.set_defaults()
 

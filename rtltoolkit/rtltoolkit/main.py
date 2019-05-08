@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.7
 
 import asyncio
 import numpy as np
@@ -64,7 +64,7 @@ def init_rtl_task(args):
         out_file = ''
 
     if args.temp_demod:
-        sdr_task = TempDemod(samp_rate, verbose, out_file)
+        sdr_task = TempDemod(samp_rate, center_freq, gain, samp_size, verbose, out_file)
     elif args.fm_demod:
         sdr_task = FmDemod(samp_rate, center_freq, gain, samp_size, verbose, out_file)
     elif args.adsb_demod:
@@ -91,8 +91,15 @@ init_parser(parser)
 args = parser.parse_args()
 
 time = 0
-
-sdr_task = init_rtl_task(args)
+try:
+    sdr_task = init_rtl_task(args)
+except OSError:
+    # Not very gracefull, should  make a function encompasing
+    # all of this and make a if __name__ which calls this
+    # function
+    print('No RTL-SDR found.')
+    print('Exiting')
+    sys.exit()
 
 loop = asyncio.get_event_loop()
 try:

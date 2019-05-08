@@ -85,7 +85,6 @@ class TempDemod(DemodTask):
         str_data = []
         while True:
             try:
-                print(self.dig_data)
                 beg = self.dig_data.index(2) + 1
                 end = self.dig_data[beg:].index(2) + beg
                 sens_data = list(self.dig_data[beg:end])
@@ -94,6 +93,7 @@ class TempDemod(DemodTask):
                 if len(sens_data) != 36:
                     continue
 
+                print(sens_data)
                 humid_int = TempDemod.get_humidity(sens_data)
                 temp_int = TempDemod.get_temp(sens_data)
                 chan_int = TempDemod.get_channel(sens_data)
@@ -114,9 +114,12 @@ class TempDemod(DemodTask):
 
         self.dig_data += new_data
         str_data = self.decode_data()
+
+        for string in str_data:
+            if self.verbose:
+                print(string)
+
         if self.file_name:
             with open(self.file_name, 'a+') as f:
                 for string in str_data:
                     f.write('{time}\n{value}\n'.format(time=datetime.now(), value=string))
-                    if self.verbose:
-                        print(string)

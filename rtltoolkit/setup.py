@@ -1,11 +1,13 @@
 from setuptools import setup, find_packages
 
-requires = [
-         'scipy',
-         'numpy',
-         'pyrtlsdr',
-         'matplotlib'
-        ]
+# requires = [
+#          'scipy',
+#          'numpy',
+#          'pyrtlsdr',
+#          'matplotlib'
+#         ]
+
+requires = []
 
 setup(name='rtltoolkit',
       version='0.1',

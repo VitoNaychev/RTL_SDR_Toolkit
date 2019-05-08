@@ -15,8 +15,6 @@ __pycache__/**
 filterdesign.py
 filter_values.txt
 calc_best_vals.py
-decoder.py
-adsbdata.txt
 
 # Compiled python modules.
 *.pyc

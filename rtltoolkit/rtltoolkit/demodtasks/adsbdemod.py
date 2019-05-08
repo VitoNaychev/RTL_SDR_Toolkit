@@ -1,4 +1,6 @@
 import numpy as np
+import pyModeS as pms
+import pprint
 
 from rtltoolkit.basetasks.demodtask import DemodTask
 
@@ -18,6 +20,7 @@ class AdsbDemod(DemodTask):
 
     def __init__(self, samp_rate, center_freq, gain, samp_size, verbose=True, file_name=''):
         super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
+        self.prev_msg = None
 
     def calc_magnitude(samples):
         samples *= 128
@@ -105,19 +108,97 @@ class AdsbDemod(DemodTask):
 
     def pack_into_bytes(data_bits):
         data_bytes = []
-        for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS // 2, 8):
-            cur_byte = data_bits[j + 0] << 0 | \
-                       data_bits[j + 1] << 1 | \
-                       data_bits[j + 2] << 2 | \
-                       data_bits[j + 3] << 3 | \
-                       data_bits[j + 4] << 4 | \
-                       data_bits[j + 5] << 5 | \
-                       data_bits[j + 6] << 6 | \
-                       data_bits[j + 7] << 7
+        for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS, 8):
+            cur_byte = 0
+            cur_byte |= data_bits[j + 0] << 7
+            cur_byte |= data_bits[j + 1] << 6
+            cur_byte |= data_bits[j + 2] << 5
+            cur_byte |= data_bits[j + 3] << 4
+            cur_byte |= data_bits[j + 4] << 3
+            cur_byte |= data_bits[j + 5] << 2
+            cur_byte |= data_bits[j + 6] << 1
+            cur_byte |= data_bits[j + 7] << 0
+
+            if cur_byte > 256 or cur_byte < 0:
+                cur_byte = 0
 
             data_bytes.append(cur_byte)
 
         return data_bytes
+
+    def dump_magnitude_bar(mag, index):
+
+        bar = '[{:0>3}] |'.format(index)
+        set = [' ', '.', '-', 'o']
+        div = int(mag) // 256 // 4
+        rem = int(mag) // 256 % 4
+        bar += '{:<10}{:>30}'.format(('O' * div + set[rem]), int(mag))
+
+        return bar + '\n'
+
+    def dump_magnitude_vect(mag_arr):
+        vector = ''
+        for i in range(AdsbDemod.MODES_FULL_LEN + 5):
+            bar = AdsbDemod.dump_magnitude_bar(mag_arr[i], i - 5)
+            vector += bar
+
+        return vector
+
+    def is_valid(msg):
+        return int(pms.crc(msg)) == 0
+
+    def decode(self, msg):
+        msg_fields = dict()
+        msg_fields['HEX'] = '0x' + msg
+        msg_fields['DF'] = pms.df(msg)
+        msg_fields['ICAO'] = pms.icao(msg)
+
+        if msg_fields['DF'] == 17:
+            adsb_fields = dict()
+            adsb_fields['TC'] = pms.typecode(msg)
+
+            if 1 <= adsb_fields['TC'] <= 4:
+                adsb_fields['CS'] = pms.adsb.callsign(msg)
+                adsb_fields['CAT'] = pms.adsb.category(msg)
+
+            if 9 <= adsb_fields['TC'] <= 18:
+                pos_fields = dict()
+                if self.prev_msg is not None \
+                   and pms.adsb.oe_flag(msg) != pms.adsb.oe_flag(self.prev_msg):
+
+                    lat, lon = 0, 0
+                    if pms.adsb.oe_flag(msg) == 0:
+                        lat, lon = pms.adsb.airborne_position(msg, self.prev_msg, 1, 0)
+                    else:
+                        lat, lon = pms.adsb.airborne_position(self.prev_msg, msg, 0, 1)
+
+                    pos_fields['LAT'] = lat
+                    pos_fields['LON'] = lon
+                else:
+                    self.prev_msg = msg
+
+                pos_fields['ALT'] = pms.adsb.altitude(msg)
+                adsb_fields['POS'] = pos_fields
+
+            if adsb_fields['TC'] == 19:
+                velocity_fields = dict()
+                spd, hdg, rocd, tag = pms.adsb.velocity(msg)
+                velocity_fields['SPEED'] = spd
+                velocity_fields['HEADING'] = hdg
+                velocity_fields['VERTICAL'] = rocd
+                velocity_fields['TAG'] = tag
+
+                adsb_fields['VEL'] = velocity_fields
+            if adsb_fields['TC'] == 31:
+                op_fields = dict()
+                op_fields['VER'] = pms.adsb.version(msg)
+
+                adsb_fields['OP-STATUS'] = op_fields
+
+            msg_fields['ADS-B'] = adsb_fields
+
+
+        return msg_fields
 
     def execute(self, samples):
         use_correction = False
@@ -164,7 +245,7 @@ class AdsbDemod(DemodTask):
             # is too small which usually denotes incorrect(out of phase) sampling.
             # In the phase correction we make the high levels a bit higher and the low ones
             # a bit lower
-            data_mag = mag[i + AdsbDemod.MODES_PREAMBLE * 2 : i + AdsbDemod.MODES_FULL_LEN*2]
+            data_mag = mag[i + AdsbDemod.MODES_PREAMBLE*2:i + AdsbDemod.MODES_FULL_LEN*2]
             mag_cpy = list(data_mag)
 
             if(i and AdsbDemod.detect_out_phase(mag_cpy)):
@@ -172,15 +253,15 @@ class AdsbDemod(DemodTask):
 
             bits = []
 
-            for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS, 2):
+            for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS * 2, 2):
                 low = mag_cpy[j]
                 high = mag_cpy[j + 1]
 
                 delta = abs(low - high)
 
-                if j and delta < 256:
-                    bits.append(bits[j // 2 - 1])
-                elif low == high:
+                #if j and delta < 256:
+                #    bits.append(bits[j // 2 - 1])
+                if low == high:
                     bits.append(2)
                 elif low > high:
                     bits.append(1)
@@ -197,8 +278,8 @@ class AdsbDemod(DemodTask):
             # +--------+--------+-----------+--------------------------+---------+
 
             msg_type = data_bytes[0] >> 3
-
             msg_len = AdsbDemod.return_msg_type(msg_type) // 8
+
             delta = 0
             for j in range(0, msg_len * 8 * 2, 2):
                 delta += abs(data_mag[j] -
@@ -206,7 +287,17 @@ class AdsbDemod(DemodTask):
 
             delta /= msg_len * 4
 
-            if delta < 10 * 255:
+            if delta < 13 * 255:
                 continue
 
-            print('[{}]'.format(', '.join(hex(x) for x in data_bytes)))
+            data_bytes = data_bytes[:msg_len]
+
+            msg = bytes(data_bytes).hex()
+
+            if AdsbDemod.is_valid(msg):
+                msg_fields = self.decode(msg)
+                pprint.pprint(msg_fields)
+                print('-' * 60)
+
+            #print(AdsbDemod.dump_magnitude_vect(mag[i - 5:i+AdsbDemod.MODES_FULL_LEN]))
+

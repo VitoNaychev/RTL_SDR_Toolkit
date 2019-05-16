@@ -21,7 +21,7 @@ setup(name='rtltoolkit',
       install_requires=requires,
       entry_points={
         'console_scripts': [
-            'rtltoolkit=rtltoolkit.main',
+            'rtltoolkit=rtltoolkit.main:main',
         ],
       },
       zip_safe=False)

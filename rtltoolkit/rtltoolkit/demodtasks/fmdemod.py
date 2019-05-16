@@ -12,16 +12,20 @@ from rtltoolkit.basetasks.demodtask import DemodTask
 
 class FmDemod(DemodTask):
     defaults = {
-            'samp_rate' : 1e6,
-            'center_freq' : 89.4e6,
-            'gain' : 'auto',
-            'samp_size' : 2e19
+            'samp_rate': 1e6,
+            'center_freq': 89.4e6,
+            'gain': 'auto',
+            'samp_size': 2e19
             }
 
     FM_BW = 200000
     AUDIO_RATE = 44100
-    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose = True, file_name = ''):
-        super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
+
+    def __init__(self, samp_rate, center_freq, gain, samp_size,
+                 verbose=True, file_name=''):
+
+        super().__init__(samp_rate, center_freq, gain, samp_size,
+                         verbose, file_name)
 
         self.dec_rate = int(self.samp_rate / FmDemod.FM_BW)
         self.fm_rate = int(self.samp_rate / self.dec_rate)
@@ -33,11 +37,10 @@ class FmDemod(DemodTask):
         if verbose:
             p = pyaudio.PyAudio()
             self.stream = p.open(format=pyaudio.paInt16,
-                channels=1,
-                rate=self.audio_rate,
-                output=True,
-                frames_per_buffer = self.audio_rate)
-
+                                 channels=1,
+                                 rate=self.audio_rate,
+                                 output=True,
+                                 frames_per_buffer=self.audio_rate)
 
     def focus_FM_signal(samples, samp_rate):
         dec_rate = int(samp_rate / FmDemod.FM_BW)
@@ -52,10 +55,10 @@ class FmDemod(DemodTask):
     def de_emphasis_filter(samples, fm_rate):
         # The de-emphasis filter
         # Given a signal (in a numpy array) with sampling rate samp_rate_fm
-        d = fm_rate * 75e-6   # Calculate the # of samples to hit the -3dB point
-        x = np.exp(-1/d)   # Calculate the decay between each sample
-        b = [1-x]          # Create the filter coefficients
-        a = [1,-x]
+        d = fm_rate * 75e-6  # Calculate the # of samples to hit the -3dB point
+        x = np.exp(-1 / d)   # Calculate the decay between each sample
+        b = [1 - x]          # Create the filter coefficients
+        a = [1, -x]
         samples = signal.lfilter(b, a, samples)
         return samples
 
@@ -90,4 +93,3 @@ class FmDemod(DemodTask):
     def __del__(self):
         if self.stream is not None:
             self.stream.close()
-

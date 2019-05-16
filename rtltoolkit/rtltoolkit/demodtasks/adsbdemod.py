@@ -18,8 +18,10 @@ class AdsbDemod(DemodTask):
     MODES_SHORT_MSG_BITS = 56
     MODES_FULL_LEN = MODES_PREAMBLE + MODES_LONG_MSG_BITS
 
-    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose=True, file_name=''):
-        super().__init__(samp_rate, center_freq, gain, samp_size, verbose, file_name)
+    def __init__(self, samp_rate, center_freq, gain, samp_size,
+                 verbose=True, file_name=''):
+        super().__init__(samp_rate, center_freq, gain, samp_size,
+                         verbose, file_name)
         self.prev_msg = None
 
     def calc_magnitude(samples):
@@ -98,13 +100,20 @@ class AdsbDemod(DemodTask):
 
         return 1
 
-    def return_msg_type(msg_type):
-        if msg_type == 16 or msg_type == 17 or \
-           msg_type == 19 or msg_type == 20 or \
-           msg_type == 21:
-            return AdsbDemod.MODES_LONG_MSG_BITS
-        else:
-            return AdsbDemod.MODES_SHORT_MSG_BITS
+    def pack_into_bits(mag):
+        data_bits = []
+        for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS * 2, 2):
+            low = mag[j]
+            high = mag[j + 1]
+
+            if low == high:
+                data_bits.append(2)
+            elif low > high:
+                data_bits.append(1)
+            else:
+                data_bits.append(0)
+
+        return data_bits
 
     def pack_into_bytes(data_bits):
         data_bytes = []
@@ -147,61 +156,90 @@ class AdsbDemod(DemodTask):
     def is_valid(msg):
         return int(pms.crc(msg)) == 0
 
+    def return_msg_len(msg_type):
+        if msg_type == 16 or msg_type == 17 or \
+           msg_type == 19 or msg_type == 20 or \
+           msg_type == 21:
+            return AdsbDemod.MODES_LONG_MSG_BITS
+        else:
+            return AdsbDemod.MODES_SHORT_MSG_BITS
+
+    def decode_msg_type(msg):
+        return pms.df(msg)
+
+    def decode_msg_icao(msg):
+        return pms.icao(msg)
+
+    def decode_adsb_id(msg):
+        id_fields = dict()
+        id_fields['CS'] = pms.adsb.callsign(msg)
+        id_fields['CAT'] = pms.adsb.category(msg)
+
+        return id_fields
+
+    def decode_adsb_pos(self, msg):
+        pos_fields = dict()
+        if self.prev_msg is not None \
+           and pms.adsb.oe_flag(msg) != pms.adsb.oe_flag(self.prev_msg):
+
+            lat, lon = 0, 0
+            if pms.adsb.oe_flag(msg) == 0:
+                lat, lon = pms.adsb.airborne_position(msg, self.prev_msg, 1, 0)
+            else:
+                lat, lon = pms.adsb.airborne_position(self.prev_msg, msg, 0, 1)
+
+            pos_fields['LAT'] = lat
+            pos_fields['LON'] = lon
+        else:
+            self.prev_msg = msg
+
+        pos_fields['ALT'] = pms.adsb.altitude(msg)
+
+        return pos_fields
+
+    def decode_adsb_velocity(msg):
+        velocity_fields = dict()
+        spd, hdg, rocd, tag = pms.adsb.velocity(msg)
+        velocity_fields['SPEED'] = spd
+        velocity_fields['HEADING'] = hdg
+        velocity_fields['VERTICAL'] = rocd
+        velocity_fields['TAG'] = tag
+
+        return velocity_fields
+
+    def decode_adsb_ver(msg):
+        op_fields = dict()
+        op_fields['VER'] = pms.adsb.version(msg)
+
+        return op_fields
+
     def decode(self, msg):
         msg_fields = dict()
         msg_fields['HEX'] = '0x' + msg
-        msg_fields['DF'] = pms.df(msg)
-        msg_fields['ICAO'] = pms.icao(msg)
+        msg_fields['DF'] = AdsbDemod.decode_msg_type(msg)
+        msg_fields['ICAO'] = AdsbDemod.decode_msg_icao(msg)
 
         if msg_fields['DF'] == 17:
             adsb_fields = dict()
             adsb_fields['TC'] = pms.typecode(msg)
 
             if 1 <= adsb_fields['TC'] <= 4:
-                adsb_fields['CS'] = pms.adsb.callsign(msg)
-                adsb_fields['CAT'] = pms.adsb.category(msg)
+                adsb_fields['ID'] = AdsbDemod.decode_adsb_id(msg)
 
             if 9 <= adsb_fields['TC'] <= 18:
-                pos_fields = dict()
-                if self.prev_msg is not None \
-                   and pms.adsb.oe_flag(msg) != pms.adsb.oe_flag(self.prev_msg):
-
-                    lat, lon = 0, 0
-                    if pms.adsb.oe_flag(msg) == 0:
-                        lat, lon = pms.adsb.airborne_position(msg, self.prev_msg, 1, 0)
-                    else:
-                        lat, lon = pms.adsb.airborne_position(self.prev_msg, msg, 0, 1)
-
-                    pos_fields['LAT'] = lat
-                    pos_fields['LON'] = lon
-                else:
-                    self.prev_msg = msg
-
-                pos_fields['ALT'] = pms.adsb.altitude(msg)
-                adsb_fields['POS'] = pos_fields
+                adsb_fields['POS'] = AdsbDemod.decode_adsb_pos(self, msg)
 
             if adsb_fields['TC'] == 19:
-                velocity_fields = dict()
-                spd, hdg, rocd, tag = pms.adsb.velocity(msg)
-                velocity_fields['SPEED'] = spd
-                velocity_fields['HEADING'] = hdg
-                velocity_fields['VERTICAL'] = rocd
-                velocity_fields['TAG'] = tag
+                adsb_fields['VEL'] = AdsbDemod.decode_adsb_velocity(msg)
 
-                adsb_fields['VEL'] = velocity_fields
             if adsb_fields['TC'] == 31:
-                op_fields = dict()
-                op_fields['VER'] = pms.adsb.version(msg)
-
-                adsb_fields['OP-STATUS'] = op_fields
+                adsb_fields['OP-STATUS'] = AdsbDemod.decode_adsb_ver(msg)
 
             msg_fields['ADS-B'] = adsb_fields
-
 
         return msg_fields
 
     def execute(self, samples):
-        use_correction = False
         mag = AdsbDemod.calc_magnitude(samples)
         mag_cpy = []
 
@@ -213,72 +251,60 @@ class AdsbDemod(DemodTask):
             # the data is converted into bits.
             # The modulation is PPM(Pulse Position Modulation) and each
             # pulse accompanied by and idle period represents a bit. Therefore
-            # if one bit is with a length of 1 ms each of the two pulses representing
-            # it will have a length of 0.5 ms. Because of this the minimal sampling
-            # rate needed to catch those short pulses is 2 MHz (T = 1/(2 * 10^6) = 0.5 ms)
-            #       _____ _____            _____       _____
-            #      |     |     |          |     |     |     |
-            #      |     |     |          |     |     |     |
-            #  OFF | ON  | ON  | OFF  OFF | ON  |     |     |
-            # _____|     |     |__________|     |_____|     |
+            # if one bit is with a length of 1 ms each of the two pulses
+            # representing it will have a length of 0.5 ms. Because of this the
+            # minimal sampling rate needed to catch those short pulses is 2 MHz
+            # (T = 1/(2 * 10^6) = 0.5 ms)
+            #        _____ _____            _____       _____
+            #       |     |     |          |     |     |     |
+            #       |     |     |          |     |     |     |
+            #   OFF | ON  | ON  | OFF  OFF | ON  |     |     |
+            #  _____|     |     |__________|     |_____|     |
             #
-            #|<--->|<--->|
+            # |<--->|<--->|
             # 0.5ms 0.5ms
             #
-            # A logical one is denoted by an ON followed by and OFF and a logical zero
-            # by an OFF followed by an ON
+            # A logical one is denoted by an ON followed by and OFF and a
+            # logical zero by an OFF followed by an ON
 
             # Check for a valid preamble denoting an incoming message
             # Keep in mind that having 2 MS/s means that alot of the noice will
-            # be mistaken for a valid preamble, which is the reason for the later
-            # tests of the message
-            if not AdsbDemod.check_preamble(mag[i : i + AdsbDemod.MODES_PREAMBLE * 2]):
+            # be mistaken for a valid preamble, which is the reason for the
+            # later tests of the message
+            if not AdsbDemod.check_preamble(mag[i:
+                                                i+AdsbDemod.MODES_PREAMBLE*2]):
                 continue
 
-            # if use_correction:
-            # Due to the fact that the sample period is equal to the length of the pulses
-            # It is unlikely that the pulses will be totaly synchronised with the sampling
-            # process. Therefore small correction can be made to fix this.
-            # The main problem is that if the pulses are not sampled properly they
-            # may "leak" in two adjecent ones. Therefore phase correction is applied
-            # if we detect that the difference between the low(OFF) and high(ON) levels
-            # is too small which usually denotes incorrect(out of phase) sampling.
-            # In the phase correction we make the high levels a bit higher and the low ones
-            # a bit lower
-            data_mag = mag[i + AdsbDemod.MODES_PREAMBLE*2:i + AdsbDemod.MODES_FULL_LEN*2]
+            # Due to the fact that the sample period is equal to the length
+            # of the pulses It is unlikely that the pulses will be totaly
+            # synchronised with the sampling process. Therefore small
+            # correction can be made to fix this. The main problem is that
+            # if the pulses are not sampled properly they may "leak" in two
+            # adjecent ones. Therefore phase correction is applied if we
+            # detect that the difference between the low(OFF) and high(ON)
+            # levels is too small which usually denotes incorrect(out of phase)
+            # sampling. In the phase correction we make the high levels a bit
+            # higher and the low ones a bit lower
+
+            data_mag = mag[i + AdsbDemod.MODES_PREAMBLE * 2:
+                           i + AdsbDemod.MODES_FULL_LEN * 2]
             mag_cpy = list(data_mag)
 
             if(i and AdsbDemod.detect_out_phase(mag_cpy)):
                 mag_cpy = AdsbDemod.correct_phase(mag_cpy)
 
-            bits = []
-
-            for j in range(0, AdsbDemod.MODES_LONG_MSG_BITS * 2, 2):
-                low = mag_cpy[j]
-                high = mag_cpy[j + 1]
-
-                delta = abs(low - high)
-
-                #if j and delta < 256:
-                #    bits.append(bits[j // 2 - 1])
-                if low == high:
-                    bits.append(2)
-                elif low > high:
-                    bits.append(1)
-                else:
-                    bits.append(0)
-
-            data_bytes = AdsbDemod.pack_into_bytes(bits)
+            data_bits = AdsbDemod.pack_into_bits(mag_cpy)
+            data_bytes = AdsbDemod.pack_into_bytes(data_bits)
 
             # The downlink format is contained within the first 5 bits of the
             # ADS-B message structure. With it we can determine the length of
             # the message
-            # +--------+--------+-----------+--------------------------+---------+
-            # |  DF 5  |  ** 3  |  ICAO 24  |          DATA 56         |  PI 24  |
-            # +--------+--------+-----------+--------------------------+---------+
+            # +--------+--------+-----------+---------------------+---------+
+            # |  DF 5  |  ** 3  |  ICAO 24  |       DATA 56       |  PI 24  |
+            # +--------+--------+-----------+---------------------+---------+
 
             msg_type = data_bytes[0] >> 3
-            msg_len = AdsbDemod.return_msg_type(msg_type) // 8
+            msg_len = AdsbDemod.return_msg_len(msg_type) // 8
 
             delta = 0
             for j in range(0, msg_len * 8 * 2, 2):
@@ -299,5 +325,4 @@ class AdsbDemod(DemodTask):
                 pprint.pprint(msg_fields)
                 print('-' * 60)
 
-            #print(AdsbDemod.dump_magnitude_vect(mag[i - 5:i+AdsbDemod.MODES_FULL_LEN]))
-
+# print(AdsbDemod.dump_magnitude_vect(mag[i - 5:i+AdsbDemod.MODES_FULL_LEN]))

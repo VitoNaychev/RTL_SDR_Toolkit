@@ -1,4 +1,5 @@
 import numpy as np
+import pprint
 from datetime import datetime
 
 from rtltoolkit.basetasks.demodtask import DemodTask
@@ -12,8 +13,12 @@ class TempDemod(DemodTask):
             'samp_size': 2**19
             }
 
-    def __init__(self, samp_rate, center_freq, gain, samp_size, verbose=True, file_name=''):
-        super().__init__(samp_rate, center_freq, gain, samp_size,  verbose, file_name)
+    STAT_MSG_BITS = 36
+
+    def __init__(self, samp_rate, center_freq, gain, samp_size,
+                 verbose=True, file_name=''):
+        super().__init__(samp_rate, center_freq, gain, samp_size,
+                         verbose, file_name)
         self.dig_data = []
         self.prev_switch = []
 
@@ -82,28 +87,36 @@ class TempDemod(DemodTask):
         return chan_int + 1
 
     def decode_data(self):
-        str_data = []
+        msg_fields = dict()
         while True:
+            beg, end = None, None
+
             try:
                 beg = self.dig_data.index(2) + 1
-                end = self.dig_data[beg:].index(2) + beg
-                sens_data = list(self.dig_data[beg:end])
-                self.dig_data = self.dig_data[end:]
-
-                if len(sens_data) != 36:
-                    continue
-
-                print(sens_data)
-                humid_int = TempDemod.get_humidity(sens_data)
-                temp_int = TempDemod.get_temp(sens_data)
-                chan_int = TempDemod.get_channel(sens_data)
-
-                str_data.append("Temperature: " + str(temp_int) + "°C " + "Humidity: "
-                                 + str(humid_int) + "% " + "Channel: " + str(chan_int))
             except ValueError:
+                self.dig_data.clear()
                 break
 
-        return str_data
+            try:
+                end = self.dig_data[beg:].index(2) + beg
+            except ValueError:
+                if len(self.dig_data) - beg > TempDemod.STAT_MSG_BITS:
+                    self.dig_data.clear()
+
+                break
+
+            sens_data = list(self.dig_data[beg:end])
+            self.dig_data = self.dig_data[end:]
+
+            if len(sens_data) != TempDemod.STAT_MSG_BITS:
+                continue
+
+            print(sens_data)
+            msg_fields['HUMID'] = TempDemod.get_humidity(sens_data)
+            msg_fields['TEMP'] = TempDemod.get_temp(sens_data)
+            msg_fields['CHAN'] = TempDemod.get_channel(sens_data)
+
+        return msg_fields
 
     def execute(self, samples):
         mag = TempDemod.calc_magnitude(samples)
@@ -113,13 +126,12 @@ class TempDemod(DemodTask):
             return
 
         self.dig_data += new_data
-        str_data = self.decode_data()
+        msg_fields = self.decode_data()
 
-        for string in str_data:
-            if self.verbose:
-                print(string)
+        if self.verbose and msg_fields:
+            pprint.pprint(msg_fields)
 
-        if self.file_name:
+        if self.file_name and msg_fields:
             with open(self.file_name, 'a+') as f:
-                for string in str_data:
-                    f.write('{time}\n{value}\n'.format(time=datetime.now(), value=string))
+                f.write('{time}\n{value}\n'.format(time=datetime.now(),
+                        value=msg_fields))

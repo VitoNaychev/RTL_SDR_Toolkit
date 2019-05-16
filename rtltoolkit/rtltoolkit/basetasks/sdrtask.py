@@ -39,12 +39,11 @@ class SDRTask:
         time_pass = 0
 
         async for samples in self._sdr.stream(self.samp_size):
-            self.execute(samples)
-
-            if time:
-                time_pass += self._samp_size
-
-            if time_pass / self.samp_rate >= time and time:
-                break
-        await _sdr.stop()
-
+            try:
+                self.execute(samples)
+            except KeyboardInterrupt:
+                print()
+                print('Handling KeyboardInterrupt')
+                await self._sdr.stop()
+                self._sdr.close()
+                return 0

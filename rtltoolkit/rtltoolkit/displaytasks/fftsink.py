@@ -57,7 +57,6 @@ class FftSink(DisplayTask):
         self.fft_line, = self.ax.plot(x_shape, [self.limit] * self.samp_size)
         self.persis_line, = self.ax.plot(x_shape, self.persis_arr)
 
-
     def update_inter_fft(self, fft_arr):
         # Set the new data for the FFT line
         self.fft_line.set_ydata(fft_arr)

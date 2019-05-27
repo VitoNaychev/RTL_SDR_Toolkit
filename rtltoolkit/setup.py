@@ -4,8 +4,10 @@ from setuptools import setup, find_packages
 #          'scipy',
 #          'numpy',
 #          'pyrtlsdr',
-#          'matplotlib'
-#         ]
+#          'matplotlib',
+#          'pyaudio',
+#          'pymodes'
+#          ]
 
 requires = []
 

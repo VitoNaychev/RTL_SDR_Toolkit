@@ -4,25 +4,19 @@ from rtltoolkit.basetasks.transmittask import TransmitTask
 
 
 class JammerTask(TransmitTask):
-    def __init__(self):
-        # No need to ''oversample the sinusoid
-        # mainly because we won't be transmitting
-        # data with it and it will come out as a
-        # square wave from the Raspberry Pi's pin
-        # so  we will use only 4 point to represent it
-        super().__init__(4, '')
+    def __init__(self, samp_rate, center_freq, gain, samp_size):
+        super().__init__(samp_rate, center_freq, gain, samp_size)
 
+    def generate_iq(samp_rate, samp_size):
+        sig_len = samp_size / samp_rate
+        per_arr = np.arange(0, sig_len, 1/samp_rate)
+        freq = samp_rate / 100
+
+        sin_wav = np.sin(2 * np.pi * freq * per_arr)
+        cos_wav = np.cos(2 * np.pi * freq * per_arr)
+        iq_wav = cos_wav + sin_wav * 1j
+        return iq_wav
+    
     def execute(self):
-        sin_data = []
-        sin_data.append(np.around(np.sin(np.pi * 0 / 4), 2)
-                        + np.around(np.cos(np.pi * 0 / 4), 2) * 1j)
-        sin_data.append(np.around(np.sin(np.pi * 1 / 4), 2)
-                        + np.around(np.cos(np.pi * 1 / 4), 2) * 1j)
-        sin_data.append(np.around(np.sin(np.pi * 2 / 4), 2)
-                        + np.around(np.cos(np.pi * 2 / 4), 2) * 1j)
-        sin_data.append(np.around(np.sin(np.pi * 3 / 4), 2)
-                        + np.around(np.cos(np.pi * 3 / 4), 2) * 1j)
-        for i in range(1e6):
-            sin_data += sin_data
-
-        return np.array(sin_data)
+        iq_wav = JammerTask.generate_iq(self.samp_rate, self.samp_size)
+        return iq_wav

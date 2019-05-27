@@ -1,37 +1,40 @@
 import subprocess
 import tempfile
 import os
-
-from rtltoolkit.helpers.recordsamp import RecordSamp
-
+import sys
+import time
 
 class TransmitTask:
-    def __init__(self, samp_rate, in_file):
+    def __init__(self, samp_rate, center_freq, gain, samp_size):
         self.samp_rate = samp_rate
-        self.in_file = in_file
-        self.read_samp = RecordSamp(self.in_file)
-        self.read_samp.load_from_file()
-        # position in file
-        self.pos = 0
-        # shitty naming - must fix
-
+        self.center_freq = center_freq
+        self.gain = gain
+        self.samp_size = samp_size
 
     def execute(self):
         pass
 
     async def run(self, freq):
-       # Read chunks of data from file with size samp_size until EOF
-       # Move sendiq to cur directory
-        data = self.execute()
-        while not data:
-            data = self.execute()
-            f= tempfile.NamedTemporaryFile(mode = 'w+b', prefix = 'tmp', delete = False)
-            file_name = f.name
+        r, w = os.pipe()
+        os.set_inheritable(r, True)
+        os.set_inheritable(w, True)
 
-            data.tofile(file_name)
-            subprocess.run(['sendiq', '-s ' + str(self.samp_rate),
-                    '-f ' + str(freq), '-t ' + 'double', '-i ' + file_name])
-            os.unlink(f.name)
+        pid = os.fork()
 
-            data = self.execute()
-
+        if pid != 0:
+            os.close(r)
+            w = os.fdopen(w, 'wb')
+            
+            while True:
+                data = self.execute()
+                w.write(data)
+        else:
+            time.sleep(1)
+            print('Beggining transmission...')
+            os.close(w)
+            os.dup2(r, sys.stdin.fileno())
+            cmd_args = ['sendiq', '-i', '-', '-s', str(self.samp_rate), '-f', 
+                        str(self.center_freq), '-t', 'double']
+            
+            os.execvp('sendiq', cmd_args)
+        

@@ -13,7 +13,7 @@ from rtltoolkit.basetasks.demodtask import DemodTask
 class FmDemod(DemodTask):
     defaults = {
             'samp_rate': 1e6,
-            'center_freq': 89.4e6,
+            'center_freq': 89.5e6,
             'gain': 'auto',
             'samp_size': 2e19
             }

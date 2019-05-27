@@ -46,7 +46,7 @@ class FftSink(DisplayTask):
 
         # Create an array representing the x shape of the plot
         x_shape = np.linspace(-self.samp_rate / 2, self.samp_rate/2, self.samp_size)
-        x_shape += self._sdr.center_freq
+        x_shape += self.center_freq
 
         # Create the persistence array and set it's value bellow
         # the lower limit
@@ -156,7 +156,7 @@ class FftSink(DisplayTask):
 
                 # Sum with the center frequency of the SDR to get
                 # the actual frequency band we are representing
-                freq_val += round(self._sdr.center_freq / 1e6, 2)
+                freq_val += round(self.center_freq / 1e6, 2)
 
                 # Round the frequency value to the second
                 # decimal place

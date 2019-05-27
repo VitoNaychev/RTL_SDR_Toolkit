@@ -26,7 +26,7 @@ class AdsbDemod(DemodTask):
 
     def calc_magnitude(samples):
         samples *= 128
-        samp_mag = np.around(np.absolute(samples) * 360)
+        samp_mag = np.around(np.absolute(samples))
         return samp_mag
 
     def detect_out_phase(mag):

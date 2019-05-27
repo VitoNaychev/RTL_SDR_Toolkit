@@ -1,11 +1,7 @@
 #!/usr/bin/python3.5
 
-import asyncio
-import numpy as np
-import scipy.signal as signal
-import pyaudio
-import argparse
 import sys
+import argparse
 
 from rtlsdr import RtlSdr
 
@@ -69,7 +65,7 @@ def init_parser(parser):
                         "--verbose",
                         action="store_true",
                         help="Print data to standard output")
-    
+
     parser.add_argument("--on-active",
                          action="store_true",
                          help='''Record samples only on activity
@@ -139,8 +135,9 @@ def init_rtl_task(args):
     return sdr_task
 
 
-async def streaming(sdr_task, time):
-    await sdr_task.run(time)
+def streaming(sdr_task):
+    sdr_task.run()
+
 
 def main():
     parser = argparse.ArgumentParser(description="A toolkit for the RTL-SDR")
@@ -150,15 +147,11 @@ def main():
     try:
         sdr_task = init_rtl_task(args)
     except OSError:
-        # Not very gracefull, should  make a function encompasing
-        # all of this and make a if __name__ which calls this
-        # function
         print('No RTL-SDR found.')
         print('Exiting')
         sys.exit()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(streaming(sdr_task, 0))
-
-    loop.close()
-    print('Bye!')
+    try:
+        streaming(sdr_task)
+    except KeyboardInterrupt:
+        print('Bye!')

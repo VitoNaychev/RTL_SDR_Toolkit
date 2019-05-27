@@ -1,8 +1,7 @@
-import subprocess
-import tempfile
 import os
 import sys
 import time
+
 
 class TransmitTask:
     def __init__(self, samp_rate, center_freq, gain, samp_size):
@@ -14,7 +13,7 @@ class TransmitTask:
     def execute(self):
         pass
 
-    async def run(self, freq):
+    def run(self):
         r, w = os.pipe()
         os.set_inheritable(r, True)
         os.set_inheritable(w, True)
@@ -24,7 +23,7 @@ class TransmitTask:
         if pid != 0:
             os.close(r)
             w = os.fdopen(w, 'wb')
-            
+
             while True:
                 data = self.execute()
                 w.write(data)
@@ -33,8 +32,8 @@ class TransmitTask:
             print('Beggining transmission...')
             os.close(w)
             os.dup2(r, sys.stdin.fileno())
-            cmd_args = ['sendiq', '-i', '-', '-s', str(self.samp_rate), '-f', 
+            os.dup2()
+            cmd_args = ['sendiq', '-i', '-', '-s', str(self.samp_rate), '-f',
                         str(self.center_freq), '-t', 'double']
-            
+
             os.execvp('sendiq', cmd_args)
-        

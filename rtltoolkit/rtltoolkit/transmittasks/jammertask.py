@@ -16,7 +16,7 @@ class JammerTask(TransmitTask):
         cos_wav = np.cos(2 * np.pi * freq * per_arr)
         iq_wav = cos_wav + sin_wav * 1j
         return iq_wav
-    
+
     def execute(self):
         iq_wav = JammerTask.generate_iq(self.samp_rate, self.samp_size)
         return iq_wav

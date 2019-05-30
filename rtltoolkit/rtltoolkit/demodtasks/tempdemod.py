@@ -14,6 +14,10 @@ class TempDemod(DemodTask):
             }
 
     STAT_MSG_BITS = 36
+    DIV_LEN = 0.5e-3
+    ZERO_LEN = 2e-3
+    ONE_LEN = 4e-3
+    STOP_LEN = 8e-3
 
     def __init__(self, samp_rate, center_freq, gain, samp_size,
                  verbose=True, file_name=''):
@@ -24,7 +28,6 @@ class TempDemod(DemodTask):
 
     def calc_magnitude(samples):
         mag = samples.real ** 2 + samples.imag ** 2
-        TempDemod.calc_mean_ampl(mag)
         return mag
 
     def calc_mean_ampl(samp_ampl):
@@ -55,15 +58,17 @@ class TempDemod(DemodTask):
 
         return off_count
 
-    def digitize_signal(off_count):
+    def digitize_signal(off_count, samp_rate):
         dig_data = [0] * len(off_count)
 
         for i in range(0, len(off_count)):
-            if off_count[i] < 3000 and off_count[i] > 1000:
+            if (TempDemod.ZERO_LEN - 0.25e-3) * samp_rate < off_count[i] and\
+               off_count[i] < (TempDemod.ZERO_LEN + 0.25e-3) * samp_rate:
                 dig_data[i] = 0
-            elif off_count[i] > 3000 and off_count[i] < 6000:
+            elif (TempDemod.ONE_LEN - 0.25e-3) * samp_rate < off_count[i] and\
+                 off_count[i] < (TempDemod.ONE_LEN + 0.25e-3) * samp_rate:
                 dig_data[i] = 1
-            elif off_count[i] > 6000:
+            elif off_count[i] > (TempDemod.STOP_LEN - 0.25e-3) * samp_rate:
                 dig_data[i] = 2
 
         return dig_data
@@ -124,7 +129,7 @@ class TempDemod(DemodTask):
     def execute(self, samples):
         mag = TempDemod.calc_magnitude(samples)
         off_switch = self.calc_offswitchings(mag)
-        new_data = TempDemod.digitize_signal(off_switch)
+        new_data = TempDemod.digitize_signal(off_switch, self.samp_rate)
         if not np.any(new_data):
             return
 

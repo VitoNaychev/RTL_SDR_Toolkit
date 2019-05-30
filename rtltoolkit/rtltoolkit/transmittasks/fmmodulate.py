@@ -13,7 +13,7 @@ class FmModulate(TransmitTask):
         sin_wav = np.sin(2 * np.pi * tune_freq * per_arr)
         return sin_wav
 
-    def modulate_wave(sin_wav, coef, samp_rate, sig_len):
+    def modulate_wave(sin_wav, coef, samp_rate):
         mod_r = np.cos(2 * np.pi * coef * sin_wav)
         mod_i = np.sin(2 * np.pi * coef * sin_wav)
         mod_wav = mod_r + mod_i * 1j
@@ -25,6 +25,6 @@ class FmModulate(TransmitTask):
         sin_wav = FmModulate.generate_sin(self.tune_freq,
                                           sig_len, self.samp_rate)
         mod_wav = FmModulate.modulate_wave(sin_wav, 1,
-                                           self.samp_rate, sig_len)
+                                           self.samp_rate)
 
         return mod_wav

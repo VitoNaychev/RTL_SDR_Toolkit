@@ -17,6 +17,7 @@ from rtltoolkit.displaytasks.scanfm import ScanFm
 from rtltoolkit.transmittasks.jammertask import JammerTask
 from rtltoolkit.transmittasks.fmmodulate import FmModulate
 from rtltoolkit.transmittasks.tempmodulate import TempModulate
+from rtltoolkit.transmittasks.tunemodulate import TuneModulate
 
 
 def init_parser(parser):
@@ -48,6 +49,9 @@ def init_parser(parser):
     group.add_argument("--transmit-temp",
                        action="store_true",
                        help="Transmit data based on the TFA 30 3200 sensor")
+    group.add_argument("--transmit-tune",
+                       action="store_true",
+                       help="Transmit FM radio")
 
     parser.add_argument("-c",
                         "--center",
@@ -87,7 +91,16 @@ def init_parser(parser):
                         help="Choose CMD mode for the FFT Sink")
     parser.add_argument("--tune-freq",
                         type=int,
-                        help="Choose frequency for the wave to be transmitted")
+                        help="Choose frequency for transmit-fm")
+    parser.add_argument("--channel",
+                        type=int,
+                        help="Channel value to be transmitted with transmit-temp")
+    parser.add_argument("--humidity",
+                        type=int,
+                        help="Humidity value to be transmitted with transmit-temp")
+    parser.add_argument("--temperature",
+                        type=int,
+                        help="Temperature value to be transmited with transmit-temp")
 
 
 def check_args(args):
@@ -131,9 +144,16 @@ def init_rtl_task(args):
         tune_freq = args.tune_freq
         sdr_task = FmModulate(samp_rate, center_freq, gain, samp_size, tune_freq)
     elif args.transmit_temp:
-        sdr_task = TempModulate(samp_rate, center_freq, gain, samp_size)
+        chan = args.channel
+        humid = args.humidity
+        temp = args.temperature
+        sdr_task = TempModulate(samp_rate, center_freq, gain, samp_size, 
+                                temp, humid, chan)
     elif args.jammer:
         sdr_task = JammerTask(samp_rate, center_freq, gain, samp_size)
+    elif args.transmit_tune:
+        file_name = args.file
+        sdr_task = TuneModulate(samp_rate, center_freq, gain, samp_size, file_name)
 
     return sdr_task
 

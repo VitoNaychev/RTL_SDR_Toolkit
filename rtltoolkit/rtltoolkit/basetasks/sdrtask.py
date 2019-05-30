@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-import time
 
 
 class SDRTask:
@@ -33,42 +32,74 @@ class SDRTask:
     def execute(self, samples):
         pass
 
-    def run(self):
+    def print_info(self):
         print('Sampling at {} S/s'.format(self.samp_rate))
         print('Tuned to {} Hz'.format(self.center_freq))
         print('Tuner gain set to {} dB'.format(self.gain))
         print('Sample block size is {} bytes'.format(self.samp_size))
 
+    def normalise_samples(data):
+        data = np.array(data).astype(np.float64).view(np.complex128)
+        data /= 127.5
+        data -= (1 + 1j)
+
+        return data
+
+    def run(self):
+        # Print SDR tuning info
+        self.print_info()
+
+        # Create pipe for communication between the
+        # 'rtl_sdr' process and the main program
         r, w = os.pipe()
         os.set_inheritable(r, True)
         os.set_inheritable(w, True)
 
+        # Fork process
         pid = os.fork()
 
         if pid != 0:
+            # Close the write end of the parent process
             os.close(w)
             r = os.fdopen(r, 'rb')
 
             while True:
-                data = list(r.read(self.samp_size * 2))
-                if len(data) == 0:
-                    continue
-                data = np.array(data).astype(np.float64).view(np.complex128)
-                data /= 127.5
-                data -= (1 + 1j)
-                self.execute(data)
+                data = []
+                # Wait for the child process to append data to
+                # the pipe
+                while len(data) == 0:
+                    data = list(r.read(self.samp_size * 2))
+
+                # Because 'rtl_sdr' serves data byte by byte, meaning
+                # that the even bytes will be the In-phase component
+                # and the odd ones - the Quadrature or vice-versa
+                # Thus we need to split them in order to get complex
+                # numbers and normalise them between [1 + 1j] and [-1 + -1j]
+                samples = SDRTask.normalise_samples(data)
+                # Call the execute function to process the incoming signal
+                self.execute(samples)
         else:
-            time.sleep(1)
             print('Listening...'.format(self.center_freq))
 
+            # Close the read end of the pipe
             os.close(r)
+            # Redirect the stdin of the new process to the
+            # writting end of the pipe
             os.dup2(w, sys.stdout.fileno())
 
+            # Redirect the stderr of the new process to
+            # /dev/null. Done because the programe 'rtl_sdr'
+            # starts printing info about the SDR to the
+            # stderr, which pollutes the terminal
             err = os.open('/dev/null', os.O_WRONLY)
             os.dup2(err, sys.stderr.fileno())
 
+            # Build the argument array for 'rtl_sdr'
+            # Argument descriptions can be found with
+            # 'rtl_sdr --help'
             cmd_args = ['rtl_sdr', '-', '-f', str(self.center_freq), '-s',
                         str(self.samp_rate), '-g', str(self.gain), '-b',
                         str(self.samp_size * 2)]
 
+            # Execute 'rtl-sdr' in the child process
             os.execvp('rtl_sdr', cmd_args)

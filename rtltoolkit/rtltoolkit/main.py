@@ -1,10 +1,13 @@
 #!/usr/bin/python3.5
 
+import os
 import sys
 import argparse
 
 from rtlsdr import RtlSdr
 
+from rtltoolkit.basetasks.transmittask import TransmitTask
+from rtltoolkit.basetasks.sdrtask import SDRTask
 from rtltoolkit.demodtasks.tempdemod import TempDemod
 from rtltoolkit.demodtasks.fmdemod import FmDemod
 from rtltoolkit.demodtasks.adsbdemod import AdsbDemod
@@ -144,12 +147,28 @@ def main():
     init_parser(parser)
     args = parser.parse_args()
 
-    try:
-        sdr_task = init_rtl_task(args)
-    except OSError:
-        print('No RTL-SDR found.')
-        print('Exiting')
-        sys.exit()
+    sdr_task = init_rtl_task(args)
+
+    parent_class = sdr_task.__class__.__base__
+
+    while parent_class != TransmitTask and parent_class != SDRTask:
+        parent_class = parent_class.__base__
+
+    proc_arch = str(os.uname()[-1])
+
+    if parent_class == TransmitTask and 'arm' not in proc_arch:
+        print('Transmit tasks must be run on Raspberry Pi')
+        print('Exiting...')
+        return
+
+    if parent_class == SDRTask:
+        try:
+            sdr = RtlSdr()
+        except OSError:
+            print('Recieve tasks must be run with RTL-SDR')
+            print('Exiting...')
+            return
+        sdr.close()
 
     try:
         streaming(sdr_task)

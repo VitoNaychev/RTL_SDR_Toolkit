@@ -47,6 +47,9 @@ class TempDemod(DemodTask):
                 off_count.append(0)
                 self.prev_switch.clear()
 
+        if len(off_count) == 1:
+            self.prev_switch.clear()
+
         if self.prev_switch:
             off_count.pop()
 

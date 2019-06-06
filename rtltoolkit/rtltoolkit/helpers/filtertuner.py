@@ -70,7 +70,7 @@
 # import RPi.GPIO as GPIO
 # import spidev
 
-from filterdesign import FilterDesign
+from rtltoolkit.helpers.filterdesign import FilterDesign
 
 
 class FilterTuner:

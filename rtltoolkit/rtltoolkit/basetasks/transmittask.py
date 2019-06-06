@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from rtltoolkit.helpers.filtertuner import FilterTuner
 
 
 class TransmitTask:
@@ -9,11 +10,20 @@ class TransmitTask:
         self.center_freq = center_freq
         self.gain = gain
         self.samp_size = samp_size
+        self.tuner = FilterTuner()
+        
 
     def execute(self):
         pass
 
     def run(self):
+        try:
+            print('Attempting to configure filter')
+            self.tuner.tune(self.center_freq)
+        except ValueError:
+            print('Center frequency outside of filter range')
+            print('TRANSMITTING WITHOUT FILTER')
+
         r, w = os.pipe()
         os.set_inheritable(r, True)
         os.set_inheritable(w, True)

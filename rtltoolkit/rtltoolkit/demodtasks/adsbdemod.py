@@ -128,7 +128,7 @@ class AdsbDemod(DemodTask):
             cur_byte |= data_bits[j + 6] << 1
             cur_byte |= data_bits[j + 7] << 0
 
-            if cur_byte > 256 or cur_byte < 0:
+            if cur_byte > 255 or cur_byte < 0:
                 cur_byte = 0
 
             data_bytes.append(cur_byte)
@@ -313,7 +313,7 @@ class AdsbDemod(DemodTask):
 
             delta /= msg_len * 4
 
-            if delta < 10 * 255:
+            if delta < 5 * 255:
                 continue
 
             data_bytes = data_bytes[:msg_len]

@@ -67,148 +67,282 @@
 #
 #
 
-import RPi.GPIO as GPIO
-import spidev
+# import RPi.GPIO as GPIO
+# import spidev
 
-ENser_PIN = 29
-ENinvL_PIN = 31
-ENinvR_PIN = 33
-ENres_PIN = 35
-ENmid_PIN = 37
-
-NCD2100_MIN = 6.6e-12    # 6.6 pF
-CDAC1_STEP = 6.4e-12     # 6.4 pF
-CDAC2_STEP = 1.4e-12     # 1.4 pF
-CDAC3_STEP = 0.063e-12   # 0.063 pF ~ 63 fF
-
-PE64909_MIN = 0.6e-12    # 0.6 pF
-PE64909_STEP = 117e-15   # 117 fF
-
-PE64102_MIN = 1.88e-12   # 1.88 pF
-PE64102_STEP = 391e-15   # 391 fF
-
-INVERTER_COMBS = {}
+from filterdesign import FilterDesign
 
 
-def populate_combinations():
-    for i in range(0b10000):
-        for j in range(0b10000):
-            l_val = PE64909_MIN + i * PE64909_STEP
-            r_val = PE64909_MIN + j * PE64909_STEP
-            inverter_val = (l_val * r_val) / (l_val + r_val)
-            INVERTER_COMBS[(i << 4) + j] = inverter_val
+class FilterTuner:
+    POLES = 3
+    BANDWIDTH = 5e6
+    L = [4e-9, 4e-9, 4e-9]
 
+    ENser_PIN = 29
+    ENinvL_PIN = 31
+    ENinvR_PIN = 33
+    ENres_PIN = 35
+    ENmid_PIN = 37
 
-def encode_NCD2100(value):
-    CDAC1_REG = 0
-    CDAC2_REG = 0
-    CDAC3_REG = 0
+    INVERTER_COMBS = {}
 
-    CDAC1_REG = int(value / CDAC1_STEP)
+    def __init__(self):
+        FilterTuner.populate_combinations()
+        # FilterTuner.init_GPIOs()
+        # self.spi = FilterTuner.init_SPI()
+        self.spi = None
+        self.filter_design = FilterDesign(FilterTuner.POLES,
+                                          FilterTuner.BANDWIDTH,
+                                          FilterTuner.L)
 
-    if CDAC1_REG > 0b11:
-        print('NCD2100: Too high capacitence requested')
-        return 0
+    def print_filter_values(calc_values, actual_values):
+        resonator_calc = calc_values['C'][0]
+        resonator_actual = actual_values['res']
+        middle_calc = calc_values['C'][1]
+        middle_actual = actual_values['mid']
+        inverter_calc = calc_values['Ic'][0]
+        inverter_actual = actual_values['inv']
+        series_calc = calc_values['Cin']
+        series_actual = actual_values['ser']
+        print('VALUES\tCALC\t\tACTUAL')
+        print('----------------------------------')
+        print('RES:\t{:.3f} pF\t{:.3f} pF'.format(resonator_calc * 1e12,
+                                                      resonator_actual * 1e12))
+        print('MID:\t{:.3f} pF\t{:.3f} pF'.format(middle_calc * 1e12,
+                                                  middle_actual * 1e12))
+        print('INV:\t{:.3f} pF\t{:.3f} pF'.format(inverter_calc * 1e12,
+                                                    inverter_actual * 1e12))
+        print('SER:\t{:.3f} pF\t{:.3f} pF'.format(series_calc * 1e12,
+                                                  series_actual * 1e12))
 
-    value -= CDAC1_REG * CDAC1_STEP
-    CDAC2_REG = int(value / CDAC2_STEP)
+    def tune(self, center_freq):
+        calc_values = self.filter_design.calculate(center_freq)
+        # Because the filter is 3 pole 3 values are returned
+        # the first and the last for the outter resonators
+        # and the middle for the middle one
+        resonator_values = calc_values['C']
+        middle_value = resonator_values[1]
+        outter_value = resonator_values[0]  # == resonator_value[2]
+        # For a 3 pole filter there are only two inverters with
+        # the same value, therefore its irrelevant which we take
+        inverter_value = calc_values['Ic'][0]  # == calc_values['Ic'][1]
+        # Same as for the inverter. Cin equals Cout
+        series_value = calc_values['Cin']  # == calc_values['Cout']
 
-    if CDAC2_REG > 0b111:
-        print('NCD2100: Too high capacitence requested')
-        return 0
+        series_actual = FilterTuner.tune_series(series_value, self.spi)
+        inverter_actual = FilterTuner.tune_inverter(inverter_value, self.spi)
+        middle_actual = FilterTuner.tune_middle(middle_value, self.spi)
+        resonator_actual = FilterTuner.tune_resonator(outter_value, self.spi)
 
-    value -= CDAC2_REG * CDAC2_STEP
-    CDAC3_REG = int(value / CDAC3_STEP)
+        actual_values = {
+                        'ser': series_actual,
+                        'res': resonator_actual,
+                        'mid': middle_actual,
+                        'inv': inverter_actual
+                        }
 
-    if CDAC3_REG > 0b11111:
-        print('NCD2100: Too high capacitence requested')
-        return 0
+        FilterTuner.print_filter_values(calc_values, actual_values)
 
-    NCD2100_REG = CDAC1_REG << 9 + CDAC2_REG << 6 + CDAC3_REG << 1 + 1
+    def populate_combinations():
+        PE64909_MIN = 0.6e-12    # 0.6 pF
+        PE64909_STEP = 117e-15   # 117 fF
 
-    # Although 11 bits must be send, spidev works only with
-    # bytes, therefore we must shift the value of the register
-    # 5 bits to the right, so the first 5 bits send are zeros
-    # P.S. Bits might need to be flipped because of the
-    # SPI transmission order
-    print('NCD2100:', bin(NCD2100_REG))
+        for i in range(0b10000):
+            for j in range(0b10000):
+                l_val = PE64909_MIN + i * PE64909_STEP
+                r_val = PE64909_MIN + j * PE64909_STEP
+                inverter_val = (l_val * r_val) / (l_val + r_val)
+                FilterTuner.INVERTER_COMBS[(i << 4) + j] = inverter_val
 
-    byte_arr = []
-    byte_arr.append((NCD2100_REG << 5) & 0xFF)
-    byte_arr.append((NCD2100_REG >> 3) & 0xFF)
+    def encode_NCD2100(value):
+        NCD2100_MIN = 6.6e-12    # 6.6 pF
+        CDAC1_STEP = 6.4e-12     # 6.4 pF
+        CDAC2_STEP = 1.4e-12     # 1.4 pF
+        CDAC3_STEP = 0.063e-12   # 0.063 pF ~ 63 fF
 
-    return byte_arr
+        CDAC1_REG = 0
+        CDAC2_REG = 0
+        CDAC3_REG = 0
 
+        value -= NCD2100_MIN
 
-def transmit_NCD2100(spi, cs_pin, byte_arr):
-    spi.lsbfirst = True             # Set LSB order
-    GPIO.output(cs_pin, False)
+        CDAC1_REG = int(value / CDAC1_STEP)
+        if CDAC1_REG > 0b11:
+            CDAC1_REG = 0b11
+        value -= CDAC1_REG * CDAC1_STEP
 
-    spidev.writebytes2(byte_arr)
+        CDAC2_REG = int(value / CDAC2_STEP)
+        if CDAC2_REG > 0b111:
+            CDAC2_REG = 0b111
+        value -= CDAC2_REG * CDAC2_STEP
 
-    GPIO.output(cs_pin, True)
+        CDAC3_REG = int(value / CDAC3_STEP)
+        if CDAC3_REG > 0b11111:
+            CDAC3_REG = 0b11111
+        value -= CDAC3_REG * CDAC3_STEP
 
+        if value > CDAC3_STEP:
+            print('NCD2100: Too high capacitence requested')
+            return 0
 
-def encode_PE64909(value):
-    PE64909_REG = int(value / PE64909_STEP)
+        NCD2100_REG = ((CDAC1_REG << 9) +
+                       (CDAC2_REG << 6) +
+                       (CDAC3_REG << 1) + 1)
 
-    if PE64909_REG > 0b1111:
-        print('PE64909: Too high capacitence requested')
+        # Although 11 bits must be send, spidev works only with
+        # bytes, therefore we must shift the value of the register
+        # 5 bits to the right, so the first 5 bits send are zeros
+        # P.S. Bits might need to be flipped because of the
+        # SPI transmission order
+        byte_arr = []
+        byte_arr.append((NCD2100_REG << 5) ^ 0xFF)
+        byte_arr.append((NCD2100_REG >> 3) ^ 0xFF)
 
-    return PE64909_REG & 0xFF
+        ncd2100_value = (CDAC1_REG * CDAC1_STEP +
+                         CDAC2_REG * CDAC2_STEP +
+                         CDAC3_REG * CDAC3_STEP) + NCD2100_MIN
 
+        return byte_arr, ncd2100_value
 
-def encode_PE64102(value):
-    PE64102_REG = int(value / PE64102_STEP)
+    def encode_inverter(value):
+        PE64909_MIN = 0.6e-12    # 0.6 pF
+        PE64909_MAX = 2.35e-12
 
-    if PE64102_REG > 0b11111:
-        print('PE64102: Too high capacitence requested')
+        INV_MIN = (PE64909_MIN * PE64909_MIN) / (2 * PE64909_MIN)   # 0.3 pF
+        INV_MAX = (PE64909_MAX * PE64909_MAX) / (2 * PE64909_MAX)  # 1.175 pF
 
-    return PE64102_REG & 0xFF
+        if INV_MIN > value or value > INV_MAX:
+            print('Inverter: Too high capacitence requested')
+            return 0
 
+        code = 0
+        min_diff = 1
 
-def transmit_PE64xxx(spi, cs_pin, byte):
-    spi.lsbfirst = False            # Set MSB order
-    GPIO.output(cs_pin, True)
+        for i in range(0b100000000):
+            diff = value - FilterTuner.INVERTER_COMBS[i]
+            if diff < min_diff and diff >= 0:
+                code = i
+                min_diff = value - FilterTuner.INVERTER_COMBS[i]
 
-    spidev.writebytes2(byte)
+        invL_code = code & 0x0F   # Get first four bits from code
+        invR_code = code >> 4     # Get last four bits from code
 
-    GPIO.output(cs_pin, False)
+        return invL_code ^ 0xFF, invR_code ^ 0xFF, FilterTuner.INVERTER_COMBS[code]
 
+    def encode_PE64102(value):
+        PE64102_MIN = 1.88e-12   # 1.88 pF
+        PE64102_STEP = 391e-15   # 391 fF
 
-def tune_inverter(value):
-    if 0.3e-12 > value or value > 0.969e-12:
-        print('Inverter: Too high capacitence requested')
-        return 0
+        value -= PE64102_MIN
+        PE64102_REG = int(value / PE64102_STEP)
 
-    code = 0
-    min_diff = 1
+        if PE64102_REG > 0b11111:
+            print('PE64102: Too high capacitence requested')
+            return 0
 
-    for i in range(0b100000000):
-        diff = value - INVERTER_COMBS[i]
-        if diff < min_diff and diff >= 0:
-            code = i
-            min_diff = value - INVERTER_COMBS[i]
+        return PE64102_REG ^ 0xFF, (PE64102_REG * PE64102_STEP + PE64102_MIN)
 
-    return code
+    def transmit_NCD2100(spi, cs_pin, byte_arr):
+        # NCD2100 requires LSB order
+        spi.lsbfirst = True             # Set LSB order
 
-def init_GPIOs():
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(ENser_PIN, GPIO.OUT)
-    GPIO.output(ENser_PIN, False)
-    GPIO.setup(ENinvL_PIN, GPIO.OUT)
-    GPIO.output(ENinvL_PIN, False)
-    GPIO.setup(ENinvR_PIN, GPIO.OUT)
-    GPIO.output(ENinvR_PIN, False)
-    GPIO.setup(ENres_PIN, GPIO.OUT)
-    GPIO.output(ENres_PIN, True)
-    GPIO.setup(ENmid_PIN, GPIO.OUT)
-    GPIO.output(ENmid_PIN, True)
+        # Set the Chip Select pin
+        GPIO.output(cs_pin, False)
 
+        spidev.writebytes2(byte_arr)
 
-def init_SPI():
-    spi = spidev.SpiDev()
-    # Might need spi.open(0, 0) here
-    spi.no_cs = True          # Disable use of the chip select
-    spi.lsbfirst = True       # Set LSB order
-    spi.maxspeedhz = 100e3    # NCD2100 max speed is 120kHz
+        GPIO.output(cs_pin, True)
+
+    def transmit_PE64xxx(spi, cs_pin, byte):
+        # The PE64xxx series require MSB order
+        spi.lsbfirst = False            # Set MSB order
+
+        # Set the Chip Select pin
+        GPIO.output(cs_pin, True)
+
+        spidev.writebytes2(byte)
+
+        GPIO.output(cs_pin, False)
+
+    def tune_inverter(req_value, spi):
+        # Get the codes for the left and right digital capacitor
+        # as well as the actuall inverter value
+        invL_code, invR_code, inverter_actual = FilterTuner.encode_inverter(req_value)
+
+        # transmit_PE64xxx(spi, FilterTuenr.ENinvL_PIN, invL_code)
+        # transmit_PE64xxx(spi, FilterTuner.ENinvR_PIN, invR_code)
+        return inverter_actual
+
+    def tune_series(req_value, spi):
+        # Values of paralel and series capacitor to
+        # the digital capacitor
+        CAP_PAR = 0.25e-12  # 0.25 pF
+        CAP_SER = 7.5e-12   # 7.5  pF
+
+        # First calculate the value of PE64102 because it's
+        # connected in series with other capacitors
+        pe64102_val = abs((req_value * CAP_SER) / (req_value - CAP_SER))
+
+        # Subtract the parallel capacitors value
+        pe64102_val -= CAP_PAR
+
+        # The function returns the code to be transmited and the
+        # actual value calculated with that code
+        pe64102_code, pe64102_actual = FilterTuner.encode_PE64102(pe64102_val)
+
+        # Calculate the actual value of the series capacitor
+        pe64102_actual += CAP_PAR
+        series_actual = (pe64102_actual * CAP_SER) / (pe64102_actual + CAP_SER)
+
+        # transmit_PE64xxx(spi, FilterTuner.ENser_PIN, pe64102_code)
+        return series_actual
+
+    def tune_resonator(req_value, spi):
+        # Parallel capacitor value of the outter resonators
+        RES_PAR = 16.8e-12  # 16.8 pF
+
+        # Get the NCD2100 code as well as the actual
+        # NCD2100 value
+        ncd2100_code, ncd2100_actual = FilterTuner.encode_NCD2100(req_value - RES_PAR)
+
+        # Calculate the outter resonators value
+        resonator_actual = ncd2100_actual + RES_PAR
+
+        # transmit_NCD2100(spi, FilterTuner.ENres_PIN, ncd2100_code)
+        return resonator_actual
+
+    def tune_middle(req_value, spi):
+        # Parallel capacitor value of the middle resonators
+        MID_PAR = 18e-12    # 18 pF
+
+        # Get the NCD2100 code as well as the actual
+        # NCD2100 value
+        ncd2100_code, ncd2100_value = FilterTuner.encode_NCD2100(req_value - MID_PAR)
+
+        # Calculate the middle resonator value
+        middle_actual = ncd2100_value + MID_PAR
+
+        # transmit_NCD2100(spi, FilterTuner.ENmid_PIN, ncd2100_code)
+        return middle_actual
+
+    def init_GPIOs():
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(FilterTuner.ENser_PIN, GPIO.OUT)
+        GPIO.output(FilterTuner.ENser_PIN, False)
+        GPIO.setup(FilterTuner.ENinvL_PIN, GPIO.OUT)
+        GPIO.output(FilterTuner.ENinvL_PIN, False)
+        GPIO.setup(FilterTuner.ENinvR_PIN, GPIO.OUT)
+        GPIO.output(FilterTuner.ENinvR_PIN, False)
+        GPIO.setup(FilterTuner.ENres_PIN, GPIO.OUT)
+        GPIO.output(FilterTuner.ENres_PIN, True)
+        GPIO.setup(FilterTuner.ENmid_PIN, GPIO.OUT)
+        GPIO.output(FilterTuner.ENmid_PIN, True)
+
+    def init_SPI(self):
+        spi = spidev.SpiDev()
+        # Might need spi.open(0, 0) here
+        spi.no_cs = True          # Disable use of the chip select
+        spi.lsbfirst = True       # Set LSB order
+        spi.maxspeedhz = 100e3    # NCD2100 max speed is 120kHz
+
+        return spi

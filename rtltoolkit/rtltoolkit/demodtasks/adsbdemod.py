@@ -25,8 +25,8 @@ class AdsbDemod(DemodTask):
         self.prev_msg = None
 
     def calc_magnitude(samples):
-        samples *= 128
-        samp_mag = np.around(np.absolute(samples) * 360)
+        samples *= 255
+        samp_mag = np.around(samples.real ** 2 + samples.imag ** 2)
         return samp_mag
 
     def detect_out_phase(mag):
@@ -311,9 +311,9 @@ class AdsbDemod(DemodTask):
                 delta += abs(data_mag[j] -
                              data_mag[j + 1])
 
-            delta /= msg_len * 4
+            delta /= msg_len * 8
 
-            if delta < 5 * 255:
+            if delta < 255:
                 continue
 
             data_bytes = data_bytes[:msg_len]

@@ -182,8 +182,7 @@ class FilterTuner:
         value -= CDAC3_REG * CDAC3_STEP
 
         if value > CDAC3_STEP:
-            print('NCD2100: Too high capacitence requested')
-            return 0
+            raise ValueError('NCD2100: Too high capacitence requested')
 
         NCD2100_REG = ((CDAC1_REG << 9) +
                        (CDAC2_REG << 6) +
@@ -212,8 +211,7 @@ class FilterTuner:
         INV_MAX = (PE64909_MAX * PE64909_MAX) / (2 * PE64909_MAX)  # 1.175 pF
 
         if INV_MIN > value or value > INV_MAX:
-            print('Inverter: Too high capacitence requested')
-            return 0
+            raise ValueError('Inverter: Too high capacitence requested')
 
         code = 0
         min_diff = 1
@@ -237,8 +235,7 @@ class FilterTuner:
         PE64102_REG = int(value / PE64102_STEP)
 
         if PE64102_REG > 0b11111:
-            print('PE64102: Too high capacitence requested')
-            return 0
+            raise ValueError('PE64102: Too high capacitence requested')
 
         return PE64102_REG ^ 0xFF, (PE64102_REG * PE64102_STEP + PE64102_MIN)
 

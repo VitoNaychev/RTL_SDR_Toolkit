@@ -32,7 +32,6 @@ class TransmitTask:
             print('Beggining transmission...')
             os.close(w)
             os.dup2(r, sys.stdin.fileno())
-            os.dup2()
             cmd_args = ['sendiq', '-i', '-', '-s', str(self.samp_rate), '-f',
                         str(self.center_freq), '-t', 'double']
 

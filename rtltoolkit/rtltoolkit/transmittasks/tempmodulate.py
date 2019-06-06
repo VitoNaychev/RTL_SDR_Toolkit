@@ -17,8 +17,11 @@ class TempModulate(TransmitTask):
 
     ON_FREQ = 1e3      # in hertz
 
-    def __init__(self, samp_rate, center_freq, gain, samp_size):
+    def __init__(self, samp_rate, center_freq, gain, samp_size, temp, humid, chan):
         super().__init__(samp_rate, center_freq, gain, samp_size)
+        self.temp = temp
+        self.humid = humid
+        self.chan = chan
 
     def encode_data(chan, temp, humid):
         id_bits = [0, 1, 0, 1]
@@ -78,7 +81,7 @@ class TempModulate(TransmitTask):
         return np.array(signal)
 
     def execute(self):
-        data = TempModulate.encode_data(1, 10, 15)
+        data = TempModulate.encode_data(self.chan, self.humid, self.temp)
         signal = TempModulate.modulate_data(data, self.samp_rate)
 
         return signal
